@@ -1,0 +1,198 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: #05090f;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    color: #90c8e0;
+}
+
+canvas { display: block; }
+
+#ui {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(5, 14, 28, 0.88);
+    border: 1px solid #1a4060;
+    border-radius: 8px;
+    padding: 18px 20px;
+    min-width: 240px;
+    backdrop-filter: blur(6px);
+    user-select: none;
+}
+
+h2 {
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: #4db8e0;
+    margin-bottom: 18px;
+    border-bottom: 1px solid #1a4060;
+    padding-bottom: 10px;
+}
+
+.row { margin-bottom: 14px; }
+
+label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #5a8aaa;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+.val { color: #4db8e0; font-weight: bold; }
+
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 3px;
+    background: #1a4060;
+    border-radius: 2px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #4db8e0;
+    cursor: pointer;
+}
+
+select {
+    width: 100%;
+    background: #0a1a2e;
+    color: #90c8e0;
+    border: 1px solid #1a4060;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    outline: none;
+    cursor: pointer;
+}
+
+select:hover { border-color: #2a6090; }
+
+.check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.check-row label {
+    margin: 0;
+    cursor: pointer;
+}
+
+input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: #4db8e0;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+button {
+    width: 100%;
+    padding: 8px;
+    background: #0d1f33;
+    color: #4db8e0;
+    border: 1px solid #1a4060;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+button:hover {
+    background: #162c44;
+    border-color: #2a6090;
+}
+
+.hint {
+    font-size: 9px;
+    color: #2a4a60;
+    margin-top: 16px;
+    line-height: 1.6;
+    letter-spacing: 0.5px;
+}
+
+/* ── Aerodynamics metrics ──────────────────────────── */
+.section-head {
+    font-size: 9px;
+    letter-spacing: 2.5px;
+    color: #2a5a7a;
+    margin: 18px 0 10px;
+    padding-top: 14px;
+    border-top: 1px solid #122a40;
+    text-transform: uppercase;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 5px 0;
+    border-bottom: 1px solid #0c1e30;
+}
+
+.metric-row:last-child { border-bottom: none; }
+
+.m-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #3a6a8a;
+}
+
+.m-val {
+    font-size: 14px;
+    color: #4de8a0;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-align: right;
+}
+
+.m-val.cd-val {
+    font-size: 16px;
+    color: #7ce0ff;
+}
+
+/* ── Legend ───────────────────────────────────────── */
+#legend {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(5, 14, 28, 0.80);
+    border: 1px solid #1a4060;
+    border-radius: 6px;
+    padding: 10px 14px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: #4a7a9a;
+    transition: opacity 0.3s;
+}
+
+#legend-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+#legend-gradient {
+    width: 120px;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, #1a44ff, #00eeff, #44ff44, #ffff00, #ff2200);
+}
+
+.leg-label { font-size: 9px; color: #3a6a8a; }
