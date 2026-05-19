@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tharr\\\\Desktop\\\\Coding Files\\\\Websites\\\\windtunnel\" -Recurse -Force)",
-      "Bash(Select-Object FullName, PSIsContainer)",
-      "PowerShell($items = Get-ChildItem \"C:\\\\Users\\\\tharr\\\\Desktop\\\\Coding Files\\\\Websites\\\\windtunnel\" -Force -ErrorAction SilentlyContinue; if \\($items\\) { $items | ForEach-Object { $_.FullName } } else { \"Directory is empty or contains no items\" })"
-    ]
-  }
-}
