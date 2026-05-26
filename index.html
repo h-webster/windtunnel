@@ -3,285 +3,477 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>F1 Aero Simulator</title>
+    <title>Interactive F1 Aero Simulator - Complex GP Circuit</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #121212;
             color: #ffffff;
             display: flex;
             flex-direction: column;
             align-items: center;
             padding: 20px;
+            margin: 0;
+            overflow-x: hidden;
         }
-        .container {
+        h1 { margin-bottom: 5px; color: #ff3333; }
+        .instructions { margin-bottom: 20px; color: #aaa; font-size: 1.1em; }
+        .main-container {
             display: flex;
             gap: 20px;
             width: 100%;
-            max-width: 900px;
+            max-width: 1400px;
             justify-content: center;
+            align-items: flex-start;
+        }
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 350px;
+            flex-shrink: 0;
+        }
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
         .panel {
             background-color: #1e1e1e;
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            flex: 1;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
-        input[type="range"] {
-            width: 100%;
-            margin: 10px 0 20px 0;
+        h2 { margin-top: 0; font-size: 1.2em; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        label { display: flex; justify-content: space-between; margin-top: 15px; font-weight: bold;}
+        input[type="range"] { width: 100%; margin: 10px 0; cursor: pointer; }
+        
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
         }
-        .checkbox-container {
-            margin: 10px 0 20px 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: bold;
-            color: #00ff88;
+        .stat-box {
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
         }
+        .stat-box.red { color: #ff5555; }
+        .stat-box.blue { color: #55aaff; }
+        .stat-box.green { color: #55ffaa; }
+        .stat-box.yellow { color: #ffff55; }
+        .stat-value { font-size: 1.5em; font-weight: bold; margin-top: 5px; }
+
         canvas {
-            background-color: #050505;
+            background-color: #000;
             border-radius: 8px;
-            margin-top: 20px;
-            border: 1px solid #333;
+            border: 2px solid #333;
         }
-        .stat {
-            font-size: 1.2em;
-            margin: 10px 0;
-            font-weight: bold;
-        }
+        #trackCanvas { background-color: #2b4a2b; /* Grass color */ }
     </style>
 </head>
 <body>
 
-    <h1>F1 Aerodynamics Simulator</h1>
+    <h1>F1 Aero & Driving Simulator: Technical GP Circuit</h1>
+    <div class="instructions">
+        <strong>Controls:</strong> Arrow Keys or WASD (Drive) | Spacebar (DRS)
+    </div>
     
-    <div class="container">
-        <div class="panel">
-            <h2>Controls</h2>
-            <label for="speed">Speed: <span id="speedVal">100</span> km/h</label>
-            <input type="range" id="speed" min="0" max="350" value="100">
+    <div class="main-container">
+        <div class="left-panel">
+            <div class="panel">
+                <h2>Aerodynamic Setup</h2>
+                
+                <label for="wing">Front Wing Angle: <span id="wingVal">15</span>°</label>
+                <input type="range" id="wing" min="0" max="30" value="15">
 
-            <label for="wing">Front Wing Angle: <span id="wingVal">10</span>°</label>
-            <input type="range" id="wing" min="0" max="30" value="10">
+                <label for="rearWing">Rear Wing Angle: <span id="rearWingVal">20</span>°</label>
+                <input type="range" id="rearWing" min="5" max="35" value="20">
+                
+                <div style="margin-top: 15px; color: #55ffaa; font-weight: bold;">
+                    DRS Status: <span id="drsStatus" style="color: #ff5555;">CLOSED</span>
+                </div>
+            </div>
 
-            <label for="rearWing">Rear Wing Angle: <span id="rearWingVal">15</span>°</label>
-            <input type="range" id="rearWing" min="5" max="35" value="15">
-
-            <div class="checkbox-container">
-                <input type="checkbox" id="drs" style="width: 20px; height: 20px;">
-                <label for="drs">Activate DRS (Drag Reduction System)</label>
+            <div class="panel">
+                <h2>Live Telemetry</h2>
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        Speed
+                        <div class="stat-value" id="liveSpeed">0</div>
+                        km/h
+                    </div>
+                    <div class="stat-box green">
+                        Grip Limit
+                        <div class="stat-value" id="liveGrip">0</div>
+                        km/h
+                    </div>
+                    <div class="stat-box red">
+                        Drag (Penalty)
+                        <div class="stat-value" id="dragVal">0</div>
+                        N
+                    </div>
+                    <div class="stat-box blue">
+                        Downforce
+                        <div class="stat-value" id="downforceVal">0</div>
+                        N
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2>Lap Timer</h2>
+                <div style="font-size: 2em; text-align: center; font-family: monospace; color: #ffff55;" id="lapTime">00.000</div>
+                <div style="text-align: center; color: #aaa; margin-top: 5px;">Best: <span id="bestLap">--.---</span></div>
             </div>
         </div>
 
-        <div class="panel">
-            <h2>Aerodynamic Data</h2>
-            <div class="stat" style="color: #ff4444;">Drag: <span id="dragVal">0</span> N</div>
-            <div class="stat" style="color: #0088ff;">Downforce: <span id="downforceVal">0</span> N</div>
-            <div class="stat" style="color: #00ff88;">Total Grip: <span id="gripVal">0</span> N</div>
-            <div class="stat" style="color: #ffff00;">Efficiency (L/D): <span id="efficiencyVal">0</span></div>
+        <div class="right-panel">
+            <canvas id="trackCanvas" width="1000" height="600"></canvas>
+            
+            <canvas id="aeroCanvas" width="1000" height="200"></canvas>
         </div>
     </div>
 
-    <canvas id="aeroCanvas" width="900" height="300"></canvas>
-
     <script>
-        const canvas = document.getElementById('aeroCanvas');
-        const ctx = canvas.getContext('2d');
+        // --- Setup and DOM Elements ---
+        const trackCanvas = document.getElementById('trackCanvas');
+        const ctxTrack = trackCanvas.getContext('2d');
+        const aeroCanvas = document.getElementById('aeroCanvas');
+        const ctxAero = aeroCanvas.getContext('2d');
 
-        // Constants
-        const rho = 1.225; // Air density
-        const area = 1.5;  // Reference area
-
-        // DOM Elements
-        const speedInput = document.getElementById('speed');
         const wingInput = document.getElementById('wing');
         const rearWingInput = document.getElementById('rearWing');
-        const drsInput = document.getElementById('drs');
-
-        const speedVal = document.getElementById('speedVal');
         const wingVal = document.getElementById('wingVal');
         const rearWingVal = document.getElementById('rearWingVal');
+        const drsStatusUI = document.getElementById('drsStatus');
+        const liveSpeedUI = document.getElementById('liveSpeed');
+        const liveGripUI = document.getElementById('liveGrip');
+        const dragValUI = document.getElementById('dragVal');
+        const downforceValUI = document.getElementById('downforceVal');
+        const lapTimeUI = document.getElementById('lapTime');
+        const bestLapUI = document.getElementById('bestLap');
 
-        const dragVal = document.getElementById('dragVal');
-        const downforceVal = document.getElementById('downforceVal');
-        const gripVal = document.getElementById('gripVal');
-        const efficiencyVal = document.getElementById('efficiencyVal');
+        // --- Physics Constants ---
+        const rho = 1.225; 
+        const area = 1.5;  
+        
+        // --- Car & Game State ---
+        let car = {
+            x: 180, y: 520, // Starting on the main straight, just before the line
+            angle: 0, 
+            speed: 0, 
+            maxSpeedBase: 360, 
+            acceleration: 2.8,
+            friction: 0.985, 
+            grassFriction: 0.82, 
+            turnSpeed: 0.035
+        };
 
-        // Physics Update loop
-        function updatePhysics() {
-            const speedKmh = parseFloat(speedInput.value);
-            const frontWingAngle = parseFloat(wingInput.value);
-            const rearWingAngle = parseFloat(rearWingInput.value);
-            const drsActive = drsInput.checked;
+        // Added W, A, S, D to tracking keys
+        let keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, KeyW: false, KeyS: false, KeyA: false, KeyD: false };
+        let drsActive = false;
+        
+        // --- Define Custom Complex Track Path ---
+        const trackPath = new Path2D();
+        const trackWidth = 40; 
 
-            speedVal.innerText = speedKmh;
-            wingVal.innerText = frontWingAngle;
-            rearWingVal.innerText = rearWingAngle;
+        // Main Pit Straight
+        trackPath.moveTo(100, 520); 
+        trackPath.lineTo(600, 520); 
+        
+        // Turn 1 & 2 Chicane
+        trackPath.lineTo(650, 520);
+        trackPath.lineTo(670, 480);
+        trackPath.lineTo(710, 500);
+        
+        // Complex S-Curves Sector
+        trackPath.bezierCurveTo(850, 530, 950, 400, 850, 320); // Long sweeper
+        trackPath.bezierCurveTo(750, 240, 950, 150, 800, 100); // Inverted S-curve
+        
+        // Tight Hairpin
+        trackPath.lineTo(500, 100); 
+        trackPath.arc(500, 130, 30, -Math.PI/2, Math.PI/2, true); // 180 degree hairpin loop
+        trackPath.lineTo(650, 160);
+        
+        // Infield Chicanes & Extra Twists
+        trackPath.quadraticCurveTo(700, 250, 550, 280);
+        trackPath.lineTo(400, 240);
+        trackPath.lineTo(350, 280);
+        trackPath.quadraticCurveTo(200, 350, 350, 420); // Loop back toward straight
+        trackPath.lineTo(150, 420);
+        
+        // Final Corner (90-degree left onto straight)
+        trackPath.bezierCurveTo(50, 420, 50, 520, 100, 520);
 
-            const v = speedKmh / 3.6; 
+        // Lap Timing Variables
+        let lapStartTime = 0;
+        let bestLapTime = Infinity;
+        let hasCrossedStartLine = false;
+        let halfwayCheckpoint = false;
 
-            const effectiveRearWingAngle = drsActive ? 0 : rearWingAngle;
+        // --- Input Handling ---
+        window.addEventListener('keydown', (e) => {
+            if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
+            if (e.code === 'Space') { e.preventDefault(); drsActive = true; }
+            // Prevent scrolling on key press
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+        });
+        window.addEventListener('keyup', (e) => {
+            if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
+            if (e.code === 'Space') drsActive = false;
+        });
 
-            const cd = 0.6 + (frontWingAngle * 0.015) + (effectiveRearWingAngle * 0.025);
-            const cl = 2.0 + (frontWingAngle * 0.08) + (effectiveRearWingAngle * 0.1);
+        // --- Main Game Loop ---
+        function update() {
+            const frontAngle = parseFloat(wingInput.value);
+            const rearAngle = parseFloat(rearWingInput.value);
+            
+            wingVal.innerText = frontAngle;
+            rearWingVal.innerText = rearAngle;
+            
+            drsStatusUI.innerText = drsActive ? "OPEN" : "CLOSED";
+            drsStatusUI.style.color = drsActive ? "#55ffaa" : "#ff5555";
 
-            const dragForce = 0.5 * rho * (v*v) * cd * area;
-            const downforceForce = 0.5 * rho * (v*v) * cl * area;
+            const effectiveRearAngle = drsActive ? 0 : rearAngle;
 
-            const weight = 800 * 9.81;
-            const totalGrip = downforceForce + weight;
-            const efficiency = dragForce > 0 ? (cl / cd) : 0;
+            // Aerodynamics Math
+            const v_ms = car.speed / 3.6; 
+            const Cd = 0.6 + (frontAngle * 0.015) + (effectiveRearAngle * 0.025);
+            const Cl = 2.0 + (frontAngle * 0.08) + (effectiveRearAngle * 0.1);
 
-            dragVal.innerText = dragForce.toFixed(0);
-            downforceVal.innerText = downforceForce.toFixed(0);
-            gripVal.innerText = totalGrip.toFixed(0);
-            efficiencyVal.innerText = efficiency.toFixed(2);
+            const dragForce = 0.5 * rho * (v_ms * v_ms) * Cd * area;
+            const downforceForce = 0.5 * rho * (v_ms * v_ms) * Cl * area;
+            
+            // Setup impacts top speed limits
+            let currentMaxSpeed = car.maxSpeedBase - (Cd * 45); 
+            if (currentMaxSpeed < 100) currentMaxSpeed = 100;
 
-            draw(v, cd, cl, dragForce, downforceForce, drsActive, frontWingAngle, rearWingAngle);
-        }
+            // Cornering Grip Thresholds
+            const baseGripSpeed = 105; 
+            const maxGripSpeed = baseGripSpeed + (Cl * 24); 
 
-        // Canvas Renderer
-        function draw(v, cd, cl, drag, downforce, drsActive, frontAngle, rearAngle) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Throttle & Brake management (Checks arrows OR wasd)
+            if (keys.ArrowUp || keys.KeyW) {
+                car.speed += car.acceleration;
+            } else if (keys.ArrowDown || keys.KeyS) {
+                car.speed -= car.acceleration * 2.0; 
+            } else {
+                car.speed *= car.friction; 
+            }
 
-            // Draw Wind Lines
-            if (canvas.aeroPhase === undefined) canvas.aeroPhase = 0;
-            canvas.aeroPhase += v * 0.3; 
+            if (car.speed > currentMaxSpeed) car.speed = currentMaxSpeed;
+            if (car.speed < 0) car.speed = 0;
 
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-            ctx.lineWidth = 2;
-            for(let i = 0; i < 15; i++) {
-                let yPos = 30 + (i * 15);
-                for(let j = 0; j < 5; j++) {
-                    let dashLength = 100;
-                    let spacing = 250;
-                    let xPos = ((canvas.aeroPhase + j * spacing + i * 40) % (canvas.width + dashLength)) - dashLength;
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(xPos, yPos);
-                    ctx.lineTo(xPos + dashLength, yPos);
-                    ctx.stroke();
+            // Off-track boundary detection
+            ctxTrack.lineWidth = trackWidth;
+            const onTrack = ctxTrack.isPointInStroke(trackPath, car.x, car.y);
+            
+            if (!onTrack) {
+                car.speed *= car.grassFriction; 
+            }
+
+            // Technical Steering & Understeer Simulation
+            let currentTurnSpeed = car.turnSpeed;
+            if (car.speed > maxGripSpeed) {
+                const understeerFactor = maxGripSpeed / car.speed;
+                currentTurnSpeed *= (understeerFactor * 0.7); // Understeer penalty
+            }
+
+            if (keys.ArrowLeft || keys.KeyA) car.angle -= currentTurnSpeed;
+            if (keys.ArrowRight || keys.KeyD) car.angle += currentTurnSpeed;
+
+            // Save previous position for line-crossing logic
+            const prevX = car.x;
+
+            // Move Car 
+            car.x += Math.cos(car.angle) * (car.speed * 0.013); 
+            car.y += Math.sin(car.angle) * (car.speed * 0.013);
+
+            // --- Track Progress & Lap Logic ---
+            if (prevX <= 200 && car.x > 200 && car.y > 480 && car.y < 560) {
+                if (!hasCrossedStartLine) {
+                    hasCrossedStartLine = true;
+                    lapStartTime = Date.now();
+                } else if (halfwayCheckpoint) {
+                    const lapTime = (Date.now() - lapStartTime) / 1000;
+                    if (lapTime < bestLapTime) {
+                        bestLapTime = lapTime;
+                        bestLapUI.innerText = bestLapTime.toFixed(3) + "s";
+                    }
+                    lapStartTime = Date.now();
+                    halfwayCheckpoint = false; 
                 }
             }
-
-            // --- Draw F1 Car ---
             
-            // Main Chassis/Body
-            ctx.fillStyle = '#CC0000'; 
-            ctx.beginPath();
-            ctx.moveTo(250, 210); // Nose tip
-            ctx.lineTo(400, 180); // Front suspension area
-            ctx.lineTo(460, 140); // Airbox / Roll hoop
-            ctx.lineTo(580, 160); // Engine cover slope
-            ctx.lineTo(580, 210); // Rear floor
-            ctx.lineTo(250, 210); // Floor line back to nose
-            ctx.fill();
+            if (car.x > 750) {
+                halfwayCheckpoint = true;
+            }
 
-            // Cockpit/Halo
-            ctx.fillStyle = '#111';
-            ctx.beginPath();
-            ctx.moveTo(400, 180);
-            ctx.lineTo(440, 170);
-            ctx.lineTo(460, 180);
-            ctx.fill();
+            if (hasCrossedStartLine) {
+                lapTimeUI.innerText = ((Date.now() - lapStartTime) / 1000).toFixed(3);
+            }
 
-            // Wheels
-            ctx.fillStyle = '#1a1a1a';
-            ctx.beginPath(); ctx.arc(330, 205, 35, 0, Math.PI*2); ctx.fill(); // Front
-            ctx.beginPath(); ctx.arc(540, 200, 40, 0, Math.PI*2); ctx.fill(); // Rear
+            // Updates to Telemetry Numbers
+            liveSpeedUI.innerText = Math.round(car.speed);
+            liveGripUI.innerText = Math.round(maxGripSpeed);
+            dragValUI.innerText = Math.round(dragForce);
+            downforceValUI.innerText = Math.round(downforceForce);
             
-            // Wheel Rims
-            ctx.fillStyle = '#555';
-            ctx.beginPath(); ctx.arc(330, 205, 15, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(540, 200, 18, 0, Math.PI*2); ctx.fill();
-
-            // Front Wing Horizontal Connection (Pylon)
-            ctx.fillStyle = '#CC0000'; 
-            ctx.fillRect(242, 198, 15, 6); 
-
-            // Front Wing (White)
-            ctx.save();
-            ctx.translate(235, 203); 
-            ctx.rotate(-frontAngle * 0.8 * (Math.PI / 180)); 
-            
-            ctx.fillStyle = '#ffffff'; // White main plane
-            ctx.fillRect(-20, -4, 45, 8); 
-            
-            ctx.fillStyle = '#222'; // Small endplate moving with the wing
-            ctx.fillRect(-20, -12, 6, 16);
-            ctx.restore();
-
-            // Rear Wing Endplate
-            ctx.fillStyle = '#222';
-            ctx.fillRect(560, 95, 25, 80); 
-            
-            // Rear Wing Lower Main Plane
-            ctx.fillStyle = '#fff';
-            ctx.save();
-            ctx.translate(582, 124);
-            ctx.rotate(-rearAngle * 0.5 * (Math.PI / 180));
-            ctx.fillRect(-17.5, -4, 35, 8); 
-            ctx.restore();
-
-            // DRS Flap
-            ctx.save();
-            ctx.translate(580, 105);
-            if (drsActive) {
-                ctx.rotate(0); 
+            if (car.speed > maxGripSpeed && (keys.ArrowLeft || keys.KeyA || keys.ArrowRight || keys.KeyD)) {
+                liveSpeedUI.style.color = "#ffff55";
             } else {
-                ctx.rotate(-(rearAngle + 10) * 0.9 * (Math.PI / 180)); 
-            }
-            ctx.fillRect(-15, -3, 30, 6);
-            ctx.restore();
-
-            // --- Draw Force Vectors (Thick Arrows) ---
-            function drawThickArrow(startX, startY, endX, endY, color) {
-                const headlen = 18; 
-                const angle = Math.atan2(endY - startY, endX - startX);
-                
-                ctx.strokeStyle = color;
-                ctx.fillStyle = color;
-                ctx.lineWidth = 8;
-                
-                // Shaft
-                ctx.beginPath();
-                ctx.moveTo(startX, startY);
-                ctx.lineTo(endX, endY);
-                ctx.stroke();
-                
-                // Head
-                ctx.beginPath();
-                ctx.moveTo(endX, endY);
-                ctx.lineTo(endX - headlen * Math.cos(angle - Math.PI / 6), endY - headlen * Math.sin(angle - Math.PI / 6));
-                ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 6), endY - headlen * Math.sin(angle + Math.PI / 6));
-                ctx.fill();
+                liveSpeedUI.style.color = "#ffffff";
             }
 
-            const forceScale = 0.008; 
+            // Loop Draw Updates
+            drawTrack();
+            drawAeroVisualizer(car.speed, dragForce, downforceForce, drsActive, frontAngle, rearAngle);
 
-            // Drag Arrow (Red) - pulling right
-            // Minimum visual length of 10px so you can always see a tiny arrow
-            const dragLength = Math.max(10, Math.min(drag * forceScale, 250));
-            drawThickArrow(460, 175, 460 + dragLength, 175, '#ff4444');
-
-            // Downforce Arrow (Blue) - pushing down
-            const downforceLength = Math.max(10, Math.min(downforce * forceScale, 180));
-            drawThickArrow(460, 215, 460, 215 + downforceLength, '#0088ff');
+            requestAnimationFrame(update);
         }
 
-        // Event Listeners
-        speedInput.addEventListener('input', updatePhysics);
-        wingInput.addEventListener('input', updatePhysics);
-        rearWingInput.addEventListener('input', updatePhysics);
-        drsInput.addEventListener('change', updatePhysics);
+        // --- Render Track Map ---
+        function drawTrack() {
+            ctxTrack.clearRect(0, 0, trackCanvas.width, trackCanvas.height);
+            
+            // Asphalt Track Base
+            ctxTrack.strokeStyle = "#444";
+            ctxTrack.lineCap = "round";
+            ctxTrack.lineJoin = "round";
+            ctxTrack.lineWidth = trackWidth;
+            ctxTrack.stroke(trackPath);
 
-        // Run initial update
-        updatePhysics();
+            // Painted Curb Edges for track aesthetics
+            ctxTrack.strokeStyle = "#fff";
+            ctxTrack.lineWidth = trackWidth - 4;
+            ctxTrack.stroke(trackPath);
+            ctxTrack.strokeStyle = "#555";
+            ctxTrack.lineWidth = trackWidth - 8;
+            ctxTrack.stroke(trackPath);
 
-        // Animate the airflow 
-        setInterval(updatePhysics, 1000 / 30); 
+            // Start/Finish Line Marking
+            ctxTrack.strokeStyle = "#fff";
+            ctxTrack.lineWidth = 4;
+            ctxTrack.setLineDash([6, 6]);
+            ctxTrack.beginPath();
+            ctxTrack.moveTo(200, 500);
+            ctxTrack.lineTo(200, 540);
+            ctxTrack.stroke();
+            ctxTrack.setLineDash([]); 
+
+            // Render Micro F1 Car 
+            ctxTrack.save();
+            ctxTrack.translate(car.x, car.y);
+            ctxTrack.rotate(car.angle);
+            
+            ctxTrack.fillStyle = "#ff0000"; 
+            ctxTrack.fillRect(-6, -3, 12, 6);
+            ctxTrack.fillStyle = "#000";    
+            ctxTrack.fillRect(0, -1.5, 3, 3);
+            ctxTrack.fillStyle = "#fff";    
+            ctxTrack.fillRect(4, -4, 2, 8);
+            ctxTrack.fillStyle = "#222";    
+            ctxTrack.fillRect(-6, -4, 1.5, 8);
+
+            ctxTrack.restore();
+        }
+
+        // --- Render Side Profile Aero Frame ---
+        let aeroWindOffset = 0;
+        function drawAeroVisualizer(speed, drag, downforce, drs, frontAngle, rearAngle) {
+            ctxAero.clearRect(0, 0, aeroCanvas.width, aeroCanvas.height);
+            
+            // Wind Stream Tunnel Particles
+            aeroWindOffset += (speed * 0.05);
+            ctxAero.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctxAero.lineWidth = 2;
+            for(let i = 0; i < 8; i++) {
+                let yPos = 20 + (i * 20);
+                let xPos = ((aeroWindOffset + i * 50) % (aeroCanvas.width + 100)) - 100;
+                ctxAero.beginPath();
+                ctxAero.moveTo(xPos, yPos);
+                ctxAero.lineTo(xPos + 150, yPos);
+                ctxAero.stroke();
+            }
+
+            const cx = aeroCanvas.width / 2;
+            const cy = 130; 
+
+            // Red Profile Body
+            ctxAero.fillStyle = '#CC0000'; 
+            ctxAero.beginPath();
+            ctxAero.moveTo(cx - 150, cy + 30);
+            ctxAero.lineTo(cx, cy);
+            ctxAero.lineTo(cx + 60, cy - 40);
+            ctxAero.lineTo(cx + 180, cy - 20);
+            ctxAero.lineTo(cx + 180, cy + 30);
+            ctxAero.fill();
+
+            // Tires
+            ctxAero.fillStyle = '#1a1a1a';
+            ctxAero.beginPath(); ctxAero.arc(cx - 70, cy + 25, 35, 0, Math.PI*2); ctxAero.fill();
+            ctxAero.beginPath(); ctxAero.arc(cx + 140, cy + 20, 40, 0, Math.PI*2); ctxAero.fill();
+            ctxAero.fillStyle = '#555';
+            ctxAero.beginPath(); ctxAero.arc(cx - 70, cy + 25, 15, 0, Math.PI*2); ctxAero.fill();
+            ctxAero.beginPath(); ctxAero.arc(cx + 140, cy + 20, 18, 0, Math.PI*2); ctxAero.fill();
+
+            // Front Wing Setup Assembly
+            ctxAero.fillStyle = '#CC0000'; 
+            ctxAero.fillRect(cx - 158, cy + 18, 15, 6); 
+            ctxAero.save();
+            ctxAero.translate(cx - 165, cy + 23); 
+            ctxAero.rotate(-frontAngle * (Math.PI / 180)); 
+            ctxAero.fillStyle = '#ffffff'; 
+            ctxAero.fillRect(-20, -4, 45, 8); 
+            ctxAero.restore();
+
+            // Rear Assembly Rig
+            ctxAero.fillStyle = '#222';
+            ctxAero.fillRect(cx + 160, cy - 85, 25, 80); 
+            ctxAero.fillStyle = '#fff';
+            ctxAero.save();
+            ctxAero.translate(cx + 182, cy - 56);
+            ctxAero.rotate(-rearAngle * 0.5 * (Math.PI / 180));
+            ctxAero.fillRect(-17.5, -4, 35, 8); 
+            ctxAero.restore();
+
+            // Actuator DRS State Control Flap
+            ctxAero.save();
+            ctxAero.translate(cx + 180, cy - 75);
+            if (drs) {
+                ctxAero.rotate(0); 
+            } else {
+                ctxAero.rotate(-(rearAngle + 10) * 0.9 * (Math.PI / 180)); 
+            }
+            ctxAero.fillStyle = drs ? '#55ffaa' : '#fff';
+            ctxAero.fillRect(-15, -3, 30, 6);
+            ctxAero.restore();
+            
+            // Physics Vectors
+            function drawArrow(sX, sY, eX, eY, color) {
+                ctxAero.strokeStyle = color; ctxAero.fillStyle = color; ctxAero.lineWidth = 6;
+                ctxAero.beginPath(); ctxAero.moveTo(sX, sY); ctxAero.lineTo(eX, eY); ctxAero.stroke();
+                let angle = Math.atan2(eY - sY, eX - sX);
+                ctxAero.beginPath(); ctxAero.moveTo(eX, eY);
+                ctxAero.lineTo(eX - 15 * Math.cos(angle - Math.PI / 6), eY - 15 * Math.sin(angle - Math.PI / 6));
+                ctxAero.lineTo(eX - 15 * Math.cos(angle + Math.PI / 6), eY - 15 * Math.sin(angle + Math.PI / 6));
+                ctxAero.fill();
+            }
+
+            const forceScale = 0.005; 
+            const dragLen = Math.max(10, Math.min(drag * forceScale, 150));
+            const downLen = Math.max(10, Math.min(downforce * forceScale, 120));
+
+            if (speed > 5) {
+                drawArrow(cx + 60, cy - 5, cx + 60 + dragLen, cy - 5, '#ff5555'); 
+                drawArrow(cx + 60, cy + 35, cx + 60, cy + 35 + downLen, '#55aaff'); 
+            }
+        }
+
+        // Run
+        update();
 
     </script>
 </body>
