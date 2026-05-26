@@ -1,86 +1,288 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Wind Tunnel Simulation</title>
-  <link href="styles.css" rel="stylesheet"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Aero Simulator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 900px;
+            justify-content: center;
+        }
+        .panel {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            flex: 1;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0 20px 0;
+        }
+        .checkbox-container {
+            margin: 10px 0 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        canvas {
+            background-color: #050505;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 1px solid #333;
+        }
+        .stat {
+            font-size: 1.2em;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
-  <div id="ui">
-    <h2>WIND TUNNEL</h2>
+    <h1>F1 Aerodynamics Simulator</h1>
+    
+    <div class="container">
+        <div class="panel">
+            <h2>Controls</h2>
+            <label for="speed">Speed: <span id="speedVal">100</span> km/h</label>
+            <input type="range" id="speed" min="0" max="350" value="100">
 
-    <div class="row">
-      <label>Wind Speed &mdash; <span class="val" id="windSpeedVal">2.0</span> m/s</label>
-      <input type="range" id="windSpeed" min="0.5" max="5" step="0.1" value="2">
+            <label for="wing">Front Wing Angle: <span id="wingVal">10</span>°</label>
+            <input type="range" id="wing" min="0" max="30" value="10">
+
+            <label for="rearWing">Rear Wing Angle: <span id="rearWingVal">15</span>°</label>
+            <input type="range" id="rearWing" min="5" max="35" value="15">
+
+            <div class="checkbox-container">
+                <input type="checkbox" id="drs" style="width: 20px; height: 20px;">
+                <label for="drs">Activate DRS (Drag Reduction System)</label>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Aerodynamic Data</h2>
+            <div class="stat" style="color: #ff4444;">Drag: <span id="dragVal">0</span> N</div>
+            <div class="stat" style="color: #0088ff;">Downforce: <span id="downforceVal">0</span> N</div>
+            <div class="stat" style="color: #00ff88;">Total Grip: <span id="gripVal">0</span> N</div>
+            <div class="stat" style="color: #ffff00;">Efficiency (L/D): <span id="efficiencyVal">0</span></div>
+        </div>
     </div>
 
-    <div class="row">
-      <label>Streamlines &mdash; <span class="val" id="streamlinesVal">8</span></label>
-      <input type="range" id="streamlines" min="4" max="16" step="1" value="8">
-    </div>
+    <canvas id="aeroCanvas" width="900" height="300"></canvas>
 
-    <div class="row">
-      <label>Test Subject</label>
-      <select id="obstacleShape">
-        <option value="car" selected>Car (Sedan)</option>
-        <option value="sphere">Sphere</option>
-        <option value="box">Box</option>
-        <option value="cylinder">Cylinder</option>
-      </select>
-    </div>
+    <script>
+        const canvas = document.getElementById('aeroCanvas');
+        const ctx = canvas.getContext('2d');
 
-    <div class="row check-row">
-      <input type="checkbox" id="showPressure" checked>
-      <label for="showPressure">Color by flow speed</label>
-    </div>
+        // Constants
+        const rho = 1.225; // Air density
+        const area = 1.5;  // Reference area
 
-    <button id="resetBtn">Reset Particles</button>
+        // DOM Elements
+        const speedInput = document.getElementById('speed');
+        const wingInput = document.getElementById('wing');
+        const rearWingInput = document.getElementById('rearWing');
+        const drsInput = document.getElementById('drs');
 
-    <p class="hint">
-      Drag &mdash; orbit &nbsp;|&nbsp; Scroll &mdash; zoom<br>
-      Wind flows left &rarr; right
-    </p>
+        const speedVal = document.getElementById('speedVal');
+        const wingVal = document.getElementById('wingVal');
+        const rearWingVal = document.getElementById('rearWingVal');
 
-    <!-- ── Aerodynamics readout ── -->
-    <div class="section-head">Aerodynamics</div>
+        const dragVal = document.getElementById('dragVal');
+        const downforceVal = document.getElementById('downforceVal');
+        const gripVal = document.getElementById('gripVal');
+        const efficiencyVal = document.getElementById('efficiencyVal');
 
-    <div class="metric-row">
-      <span class="m-label">Drag Coeff (Cd)</span>
-      <span class="m-val cd-val" id="metCd">0.28</span>
-    </div>
-    <div class="metric-row">
-      <span class="m-label">Efficiency</span>
-      <span class="m-val" id="metEff">79%</span>
-    </div>
-    <div class="metric-row">
-      <span class="m-label">Est. Top Speed</span>
-      <span class="m-val" id="metSpeed">200 km/h</span>
-    </div>
-    <div class="metric-row">
-      <span class="m-label">Downforce</span>
-      <span class="m-val" id="metDown">43 N</span>
-    </div>
-  </div>
+        // Physics Update loop
+        function updatePhysics() {
+            const speedKmh = parseFloat(speedInput.value);
+            const frontWingAngle = parseFloat(wingInput.value);
+            const rearWingAngle = parseFloat(rearWingInput.value);
+            const drsActive = drsInput.checked;
 
-  <div id="legend">
-    LATERAL FLOW SPEED
-    <div id="legend-bar">
-      <span class="leg-label">LOW</span>
-      <div id="legend-gradient"></div>
-      <span class="leg-label">HIGH</span>
-    </div>
-  </div>
+            speedVal.innerText = speedKmh;
+            wingVal.innerText = frontWingAngle;
+            rearWingVal.innerText = rearWingAngle;
 
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://unpkg.com/three@0.163.0/build/three.module.js",
-      "three/addons/": "https://unpkg.com/three@0.163.0/examples/jsm/"
-    }
-  }
-  </script>
-  <script type="module" src="main.js"></script>
+            const v = speedKmh / 3.6; 
+
+            const effectiveRearWingAngle = drsActive ? 0 : rearWingAngle;
+
+            const cd = 0.6 + (frontWingAngle * 0.015) + (effectiveRearWingAngle * 0.025);
+            const cl = 2.0 + (frontWingAngle * 0.08) + (effectiveRearWingAngle * 0.1);
+
+            const dragForce = 0.5 * rho * (v*v) * cd * area;
+            const downforceForce = 0.5 * rho * (v*v) * cl * area;
+
+            const weight = 800 * 9.81;
+            const totalGrip = downforceForce + weight;
+            const efficiency = dragForce > 0 ? (cl / cd) : 0;
+
+            dragVal.innerText = dragForce.toFixed(0);
+            downforceVal.innerText = downforceForce.toFixed(0);
+            gripVal.innerText = totalGrip.toFixed(0);
+            efficiencyVal.innerText = efficiency.toFixed(2);
+
+            draw(v, cd, cl, dragForce, downforceForce, drsActive, frontWingAngle, rearWingAngle);
+        }
+
+        // Canvas Renderer
+        function draw(v, cd, cl, drag, downforce, drsActive, frontAngle, rearAngle) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Wind Lines
+            if (canvas.aeroPhase === undefined) canvas.aeroPhase = 0;
+            canvas.aeroPhase += v * 0.3; 
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 2;
+            for(let i = 0; i < 15; i++) {
+                let yPos = 30 + (i * 15);
+                for(let j = 0; j < 5; j++) {
+                    let dashLength = 100;
+                    let spacing = 250;
+                    let xPos = ((canvas.aeroPhase + j * spacing + i * 40) % (canvas.width + dashLength)) - dashLength;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(xPos, yPos);
+                    ctx.lineTo(xPos + dashLength, yPos);
+                    ctx.stroke();
+                }
+            }
+
+            // --- Draw F1 Car ---
+            
+            // Main Chassis/Body
+            ctx.fillStyle = '#CC0000'; 
+            ctx.beginPath();
+            ctx.moveTo(250, 210); // Nose tip
+            ctx.lineTo(400, 180); // Front suspension area
+            ctx.lineTo(460, 140); // Airbox / Roll hoop
+            ctx.lineTo(580, 160); // Engine cover slope
+            ctx.lineTo(580, 210); // Rear floor
+            ctx.lineTo(250, 210); // Floor line back to nose
+            ctx.fill();
+
+            // Cockpit/Halo
+            ctx.fillStyle = '#111';
+            ctx.beginPath();
+            ctx.moveTo(400, 180);
+            ctx.lineTo(440, 170);
+            ctx.lineTo(460, 180);
+            ctx.fill();
+
+            // Wheels
+            ctx.fillStyle = '#1a1a1a';
+            ctx.beginPath(); ctx.arc(330, 205, 35, 0, Math.PI*2); ctx.fill(); // Front
+            ctx.beginPath(); ctx.arc(540, 200, 40, 0, Math.PI*2); ctx.fill(); // Rear
+            
+            // Wheel Rims
+            ctx.fillStyle = '#555';
+            ctx.beginPath(); ctx.arc(330, 205, 15, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(540, 200, 18, 0, Math.PI*2); ctx.fill();
+
+            // Front Wing Horizontal Connection (Pylon)
+            ctx.fillStyle = '#CC0000'; 
+            ctx.fillRect(242, 198, 15, 6); 
+
+            // Front Wing (White)
+            ctx.save();
+            ctx.translate(235, 203); 
+            ctx.rotate(-frontAngle * 0.8 * (Math.PI / 180)); 
+            
+            ctx.fillStyle = '#ffffff'; // White main plane
+            ctx.fillRect(-20, -4, 45, 8); 
+            
+            ctx.fillStyle = '#222'; // Small endplate moving with the wing
+            ctx.fillRect(-20, -12, 6, 16);
+            ctx.restore();
+
+            // Rear Wing Endplate
+            ctx.fillStyle = '#222';
+            ctx.fillRect(560, 95, 25, 80); 
+            
+            // Rear Wing Lower Main Plane
+            ctx.fillStyle = '#fff';
+            ctx.save();
+            ctx.translate(582, 124);
+            ctx.rotate(-rearAngle * 0.5 * (Math.PI / 180));
+            ctx.fillRect(-17.5, -4, 35, 8); 
+            ctx.restore();
+
+            // DRS Flap
+            ctx.save();
+            ctx.translate(580, 105);
+            if (drsActive) {
+                ctx.rotate(0); 
+            } else {
+                ctx.rotate(-(rearAngle + 10) * 0.9 * (Math.PI / 180)); 
+            }
+            ctx.fillRect(-15, -3, 30, 6);
+            ctx.restore();
+
+            // --- Draw Force Vectors (Thick Arrows) ---
+            function drawThickArrow(startX, startY, endX, endY, color) {
+                const headlen = 18; 
+                const angle = Math.atan2(endY - startY, endX - startX);
+                
+                ctx.strokeStyle = color;
+                ctx.fillStyle = color;
+                ctx.lineWidth = 8;
+                
+                // Shaft
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
+                
+                // Head
+                ctx.beginPath();
+                ctx.moveTo(endX, endY);
+                ctx.lineTo(endX - headlen * Math.cos(angle - Math.PI / 6), endY - headlen * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 6), endY - headlen * Math.sin(angle + Math.PI / 6));
+                ctx.fill();
+            }
+
+            const forceScale = 0.008; 
+
+            // Drag Arrow (Red) - pulling right
+            // Minimum visual length of 10px so you can always see a tiny arrow
+            const dragLength = Math.max(10, Math.min(drag * forceScale, 250));
+            drawThickArrow(460, 175, 460 + dragLength, 175, '#ff4444');
+
+            // Downforce Arrow (Blue) - pushing down
+            const downforceLength = Math.max(10, Math.min(downforce * forceScale, 180));
+            drawThickArrow(460, 215, 460, 215 + downforceLength, '#0088ff');
+        }
+
+        // Event Listeners
+        speedInput.addEventListener('input', updatePhysics);
+        wingInput.addEventListener('input', updatePhysics);
+        rearWingInput.addEventListener('input', updatePhysics);
+        drsInput.addEventListener('change', updatePhysics);
+
+        // Run initial update
+        updatePhysics();
+
+        // Animate the airflow 
+        setInterval(updatePhysics, 1000 / 30); 
+
+    </script>
 </body>
 </html>
