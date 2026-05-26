@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive F1 Aero Simulator - Complex GP Circuit</title>
+    <title>Interactive F1 Aero Simulator - Sector Timing Edition</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -65,6 +65,22 @@
         .stat-box.yellow { color: #ffff55; }
         .stat-value { font-size: 1.5em; font-weight: bold; margin-top: 5px; }
 
+        /* Timing Table Layout */
+        .timing-table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+            font-family: monospace;
+        }
+        .timing-table th, .timing-table td {
+            padding: 6px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        .timing-table th { color: #aaa; font-weight: normal; }
+        .purple-text { color: #d155ff; font-weight: bold; } /* Absolute fastest */
+        .green-text { color: #55ffaa; } /* Personal best */
+
         canvas {
             background-color: #000;
             border-radius: 8px;
@@ -75,7 +91,7 @@
 </head>
 <body>
 
-    <h1>F1 Aero & Driving Simulator: Technical GP Circuit</h1>
+    <h1>F1 Aero Simulator: Grand Prix Circuit</h1>
     <div class="instructions">
         <strong>Controls:</strong> Arrow Keys or WASD (Drive) | Spacebar (DRS)
     </div>
@@ -123,9 +139,33 @@
             </div>
             
             <div class="panel">
-                <h2>Lap Timer</h2>
-                <div style="font-size: 2em; text-align: center; font-family: monospace; color: #ffff55;" id="lapTime">00.000</div>
-                <div style="text-align: center; color: #aaa; margin-top: 5px;">Best: <span id="bestLap">--.---</span></div>
+                <h2>Lap & Sector Timer</h2>
+                <div style="font-size: 2.2em; text-align: center; font-family: monospace; color: #ffff55; margin-bottom: 5px;" id="lapTime">00.000</div>
+                <div style="text-align: center; color: #aaa; margin-bottom: 15px; font-family: monospace;">Best Lap: <span id="bestLap" style="color:#fff; font-weight:bold;">--.---</span></div>
+                
+                <div style="font-size: 0.9em; color:#aaa; font-weight:bold; text-transform: uppercase; border-bottom: 1px solid #444; padding-bottom: 3px;">Sector Breakdown</div>
+                <table class="timing-table">
+                    <tr>
+                        <th>Sector</th>
+                        <th>Live / Last</th>
+                        <th>Session Best</th>
+                    </tr>
+                    <tr>
+                        <td id="sec1Label">Sector 1</td>
+                        <td id="s1Live">--.---</td>
+                        <td id="s1Best" class="green-text">--.---</td>
+                    </tr>
+                    <tr>
+                        <td id="sec2Label">Sector 2</td>
+                        <td id="s2Live">--.---</td>
+                        <td id="s2Best" class="green-text">--.---</td>
+                    </tr>
+                    <tr>
+                        <td id="sec3Label">Sector 3</td>
+                        <td id="s3Live">--.---</td>
+                        <td id="s3Best" class="green-text">--.---</td>
+                    </tr>
+                </table>
             </div>
         </div>
 
@@ -155,13 +195,24 @@
         const lapTimeUI = document.getElementById('lapTime');
         const bestLapUI = document.getElementById('bestLap');
 
+        // Sector UI Handles
+        const s1Live = document.getElementById('s1Live');
+        const s2Live = document.getElementById('s2Live');
+        const s3Live = document.getElementById('s3Live');
+        const s1Best = document.getElementById('s1Best');
+        const s2Best = document.getElementById('s2Best');
+        const s3Best = document.getElementById('s3Best');
+        const sec1Label = document.getElementById('sec1Label');
+        const sec2Label = document.getElementById('sec2Label');
+        const sec3Label = document.getElementById('sec3Label');
+
         // --- Physics Constants ---
         const rho = 1.225; 
         const area = 1.5;  
         
         // --- Car & Game State ---
         let car = {
-            x: 180, y: 520, // Starting on the main straight, just before the line
+            x: 180, y: 530, 
             angle: 0, 
             speed: 0, 
             maxSpeedBase: 360, 
@@ -171,53 +222,64 @@
             turnSpeed: 0.035
         };
 
-        // Added W, A, S, D to tracking keys
         let keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, KeyW: false, KeyS: false, KeyA: false, KeyD: false };
         let drsActive = false;
         
-        // --- Define Custom Complex Track Path ---
+        // --- Master Track Layout (With Sector Additions) ---
         const trackPath = new Path2D();
         const trackWidth = 40; 
 
-        // Main Pit Straight
-        trackPath.moveTo(100, 520); 
-        trackPath.lineTo(600, 520); 
+        // 1. Pit Straight
+        trackPath.moveTo(150, 530); 
+        trackPath.lineTo(550, 530); 
         
-        // Turn 1 & 2 Chicane
-        trackPath.lineTo(650, 520);
-        trackPath.lineTo(670, 480);
-        trackPath.lineTo(710, 500);
+        // 2. Turn 1 & 2 Quick Flick
+        trackPath.lineTo(600, 530);
+        trackPath.lineTo(620, 490);
+        trackPath.lineTo(660, 510);
         
-        // Complex S-Curves Sector
-        trackPath.bezierCurveTo(850, 530, 950, 400, 850, 320); // Long sweeper
-        trackPath.bezierCurveTo(750, 240, 950, 150, 800, 100); // Inverted S-curve
+        // 3. Right-Side Technical S-Curves
+        trackPath.bezierCurveTo(780, 540, 880, 410, 820, 310); 
+        trackPath.bezierCurveTo(760, 210, 920, 150, 880, 80); 
         
-        // Tight Hairpin
-        trackPath.lineTo(500, 100); 
-        trackPath.arc(500, 130, 30, -Math.PI/2, Math.PI/2, true); // 180 degree hairpin loop
-        trackPath.lineTo(650, 160);
+        // 4. Back Straight (Contains Sector 1 Split Gate)
+        trackPath.lineTo(180, 80); 
         
-        // Infield Chicanes & Extra Twists
-        trackPath.quadraticCurveTo(700, 250, 550, 280);
-        trackPath.lineTo(400, 240);
-        trackPath.lineTo(350, 280);
-        trackPath.quadraticCurveTo(200, 350, 350, 420); // Loop back toward straight
-        trackPath.lineTo(150, 420);
+        // 5. Grandstand Hairpin
+        trackPath.arc(180, 110, 30, -Math.PI / 2, Math.PI / 2, true); 
         
-        // Final Corner (90-degree left onto straight)
-        trackPath.bezierCurveTo(50, 420, 50, 520, 100, 520);
+        // 6. The Out-wash Spoon Curve
+        trackPath.lineTo(350, 140);
+        trackPath.bezierCurveTo(500, 140, 650, 100, 600, 250); 
+        trackPath.quadraticCurveTo(580, 320, 480, 320); 
+        
+        // 7. Montreal Chicane 
+        trackPath.lineTo(430, 320); 
+        trackPath.lineTo(430, 400); 
+        trackPath.lineTo(300, 400); 
+        
+        // 8. NEW: Sustained, Decreasing-Radius Infield Carousel (The long corner challenge)
+        trackPath.lineTo(260, 400); 
+        trackPath.bezierCurveTo(260, 240, 120, 240, 120, 420); 
+        trackPath.lineTo(150, 460); 
+        
+        // 9. Fast Left Hand Banking Bowl
+        trackPath.bezierCurveTo(50, 460, 50, 530, 150, 530);
 
-        // Lap Timing Variables
+        // --- Core Timing Loop Logic ---
         let lapStartTime = 0;
-        let bestLapTime = Infinity;
+        let sectorStartTime = 0;
+        let currentSector = 1;
         let hasCrossedStartLine = false;
-        let halfwayCheckpoint = false;
+
+        let bestLapTime = Infinity;
+        let bestS1 = Infinity, bestS2 = Infinity, bestS3 = Infinity;
+        let lastS1 = 0, lastS2 = 0, lastS3 = 0;
 
         // --- Input Handling ---
         window.addEventListener('keydown', (e) => {
             if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
             if (e.code === 'Space') { e.preventDefault(); drsActive = true; }
-            // Prevent scrolling on key press
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
         });
         window.addEventListener('keyup', (e) => {
@@ -238,7 +300,7 @@
 
             const effectiveRearAngle = drsActive ? 0 : rearAngle;
 
-            // Aerodynamics Math
+            // Aerodynamics Math Engine
             const v_ms = car.speed / 3.6; 
             const Cd = 0.6 + (frontAngle * 0.015) + (effectiveRearAngle * 0.025);
             const Cl = 2.0 + (frontAngle * 0.08) + (effectiveRearAngle * 0.1);
@@ -246,15 +308,13 @@
             const dragForce = 0.5 * rho * (v_ms * v_ms) * Cd * area;
             const downforceForce = 0.5 * rho * (v_ms * v_ms) * Cl * area;
             
-            // Setup impacts top speed limits
             let currentMaxSpeed = car.maxSpeedBase - (Cd * 45); 
             if (currentMaxSpeed < 100) currentMaxSpeed = 100;
 
-            // Cornering Grip Thresholds
             const baseGripSpeed = 105; 
             const maxGripSpeed = baseGripSpeed + (Cl * 24); 
 
-            // Throttle & Brake management (Checks arrows OR wasd)
+            // Driving Physics Engine
             if (keys.ArrowUp || keys.KeyW) {
                 car.speed += car.acceleration;
             } else if (keys.ArrowDown || keys.KeyS) {
@@ -266,56 +326,104 @@
             if (car.speed > currentMaxSpeed) car.speed = currentMaxSpeed;
             if (car.speed < 0) car.speed = 0;
 
-            // Off-track boundary detection
+            // Off-track grass penalty evaluation
             ctxTrack.lineWidth = trackWidth;
             const onTrack = ctxTrack.isPointInStroke(trackPath, car.x, car.y);
-            
             if (!onTrack) {
                 car.speed *= car.grassFriction; 
             }
 
-            // Technical Steering & Understeer Simulation
+            // Steering calculations with Understeer
             let currentTurnSpeed = car.turnSpeed;
             if (car.speed > maxGripSpeed) {
                 const understeerFactor = maxGripSpeed / car.speed;
-                currentTurnSpeed *= (understeerFactor * 0.7); // Understeer penalty
+                currentTurnSpeed *= (understeerFactor * 0.7); 
             }
 
             if (keys.ArrowLeft || keys.KeyA) car.angle -= currentTurnSpeed;
             if (keys.ArrowRight || keys.KeyD) car.angle += currentTurnSpeed;
 
-            // Save previous position for line-crossing logic
             const prevX = car.x;
+            const prevY = car.y;
 
-            // Move Car 
+            // Update positions
             car.x += Math.cos(car.angle) * (car.speed * 0.013); 
             car.y += Math.sin(car.angle) * (car.speed * 0.013);
 
-            // --- Track Progress & Lap Logic ---
-            if (prevX <= 200 && car.x > 200 && car.y > 480 && car.y < 560) {
+            // --- F1 Sector Timing Rule Engine ---
+            if (hasCrossedStartLine) {
+                const totalElapsed = (Date.now() - lapStartTime) / 1000;
+                lapTimeUI.innerText = totalElapsed.toFixed(3);
+                
+                const currentSecElapsed = (Date.now() - sectorStartTime) / 1000;
+                if (currentSector === 1) s1Live.innerText = currentSecElapsed.toFixed(3);
+                if (currentSector === 2) s2Live.innerText = currentSecElapsed.toFixed(3);
+                if (currentSector === 3) s3Live.innerText = currentSecElapsed.toFixed(3);
+            }
+
+            // Gate 1: Sector 1 Split (Crossing X=400 heading left on the upper straight)
+            if (prevX >= 400 && car.x < 400 && car.y < 120) {
+                if (currentSector === 1 && hasCrossedStartLine) {
+                    lastS1 = (Date.now() - sectorStartTime) / 1000;
+                    s1Live.innerText = lastS1.toFixed(3);
+                    if (lastS1 < bestS1) {
+                        bestS1 = lastS1;
+                        s1Best.innerText = bestS1.toFixed(3) + "s";
+                    }
+                    currentSector = 2;
+                    sectorStartTime = Date.now();
+                }
+            }
+
+            // Gate 2: Sector 2 Split (Crossing X=280 heading left right out of the chicane)
+            if (prevX >= 280 && car.x < 280 && car.y > 360 && car.y < 440) {
+                if (currentSector === 2 && hasCrossedStartLine) {
+                    lastS2 = (Date.now() - sectorStartTime) / 1000;
+                    s2Live.innerText = lastS2.toFixed(3);
+                    if (lastS2 < bestS2) {
+                        bestS2 = lastS2;
+                        s2Best.innerText = bestS2.toFixed(3) + "s";
+                    }
+                    currentSector = 3;
+                    sectorStartTime = Date.now();
+                }
+            }
+
+            // Gate 3: Start/Finish Line (Crossing X=200 heading right on the pit straight)
+            if (prevX <= 200 && car.x > 200 && car.y > 490 && car.y < 570) {
                 if (!hasCrossedStartLine) {
                     hasCrossedStartLine = true;
                     lapStartTime = Date.now();
-                } else if (halfwayCheckpoint) {
-                    const lapTime = (Date.now() - lapStartTime) / 1000;
-                    if (lapTime < bestLapTime) {
-                        bestLapTime = lapTime;
+                    sectorStartTime = Date.now();
+                    currentSector = 1;
+                } else if (currentSector === 3) {
+                    lastS3 = (Date.now() - sectorStartTime) / 1000;
+                    s3Live.innerText = lastS3.toFixed(3);
+                    if (lastS3 < bestS3) {
+                        bestS3 = lastS3;
+                        s3Best.innerText = bestS3.toFixed(3) + "s";
+                    }
+
+                    // Complete Lap Time Evaluation
+                    const finalLapTime = lastS1 + lastS2 + lastS3;
+                    if (finalLapTime < bestLapTime) {
+                        bestLapTime = finalLapTime;
                         bestLapUI.innerText = bestLapTime.toFixed(3) + "s";
                     }
+                    
+                    // Reset State for Next Lap
+                    currentSector = 1;
                     lapStartTime = Date.now();
-                    halfwayCheckpoint = false; 
+                    sectorStartTime = Date.now();
                 }
             }
-            
-            if (car.x > 750) {
-                halfwayCheckpoint = true;
-            }
 
-            if (hasCrossedStartLine) {
-                lapTimeUI.innerText = ((Date.now() - lapStartTime) / 1000).toFixed(3);
-            }
+            // Sector Active Highlighting UI
+            sec1Label.style.color = (currentSector === 1 && hasCrossedStartLine) ? "#ffff55" : "#aaa";
+            sec2Label.style.color = (currentSector === 2) ? "#ffff55" : "#aaa";
+            sec3Label.style.color = (currentSector === 3) ? "#ffff55" : "#aaa";
 
-            // Updates to Telemetry Numbers
+            // Live Telemetry Refresh
             liveSpeedUI.innerText = Math.round(car.speed);
             liveGripUI.innerText = Math.round(maxGripSpeed);
             dragValUI.innerText = Math.round(dragForce);
@@ -327,25 +435,24 @@
                 liveSpeedUI.style.color = "#ffffff";
             }
 
-            // Loop Draw Updates
             drawTrack();
             drawAeroVisualizer(car.speed, dragForce, downforceForce, drsActive, frontAngle, rearAngle);
 
             requestAnimationFrame(update);
         }
 
-        // --- Render Track Map ---
+        // --- Render Track Canvas Map ---
         function drawTrack() {
             ctxTrack.clearRect(0, 0, trackCanvas.width, trackCanvas.height);
             
-            // Asphalt Track Base
+            // Base Asphalt Setup
             ctxTrack.strokeStyle = "#444";
             ctxTrack.lineCap = "round";
             ctxTrack.lineJoin = "round";
             ctxTrack.lineWidth = trackWidth;
             ctxTrack.stroke(trackPath);
 
-            // Painted Curb Edges for track aesthetics
+            // Red/White Outer Performance Curbing
             ctxTrack.strokeStyle = "#fff";
             ctxTrack.lineWidth = trackWidth - 4;
             ctxTrack.stroke(trackPath);
@@ -353,17 +460,25 @@
             ctxTrack.lineWidth = trackWidth - 8;
             ctxTrack.stroke(trackPath);
 
-            // Start/Finish Line Marking
-            ctxTrack.strokeStyle = "#fff";
+            // --- Visual Sector Gate Markers ---
             ctxTrack.lineWidth = 4;
-            ctxTrack.setLineDash([6, 6]);
-            ctxTrack.beginPath();
-            ctxTrack.moveTo(200, 500);
-            ctxTrack.lineTo(200, 540);
-            ctxTrack.stroke();
-            ctxTrack.setLineDash([]); 
+            ctxTrack.setLineDash([4, 4]);
 
-            // Render Micro F1 Car 
+            // Start/Finish Line (White Checker)
+            ctxTrack.strokeStyle = "#ffffff";
+            ctxTrack.beginPath(); ctxTrack.moveTo(200, 510); ctxTrack.lineTo(200, 550); ctxTrack.stroke();
+
+            // Sector 1 Split Gate (Yellow Line)
+            ctxTrack.strokeStyle = "#ffff55";
+            ctxTrack.beginPath(); ctxTrack.moveTo(400, 60); ctxTrack.lineTo(400, 100); ctxTrack.stroke();
+
+            // Sector 2 Split Gate (Magenta Line)
+            ctxTrack.strokeStyle = "#d155ff";
+            ctxTrack.beginPath(); ctxTrack.moveTo(280, 380); ctxTrack.lineTo(280, 420); ctxTrack.stroke();
+            
+            ctxTrack.setLineDash([]); // Clear Dash rules
+
+            // Draw Micro-scale Car Vector Asset
             ctxTrack.save();
             ctxTrack.translate(car.x, car.y);
             ctxTrack.rotate(car.angle);
@@ -380,12 +495,11 @@
             ctxTrack.restore();
         }
 
-        // --- Render Side Profile Aero Frame ---
+        // --- Render Side Profile Aero Configuration Window ---
         let aeroWindOffset = 0;
         function drawAeroVisualizer(speed, drag, downforce, drs, frontAngle, rearAngle) {
             ctxAero.clearRect(0, 0, aeroCanvas.width, aeroCanvas.height);
             
-            // Wind Stream Tunnel Particles
             aeroWindOffset += (speed * 0.05);
             ctxAero.strokeStyle = 'rgba(255, 255, 255, 0.15)';
             ctxAero.lineWidth = 2;
@@ -401,7 +515,6 @@
             const cx = aeroCanvas.width / 2;
             const cy = 130; 
 
-            // Red Profile Body
             ctxAero.fillStyle = '#CC0000'; 
             ctxAero.beginPath();
             ctxAero.moveTo(cx - 150, cy + 30);
@@ -411,7 +524,6 @@
             ctxAero.lineTo(cx + 180, cy + 30);
             ctxAero.fill();
 
-            // Tires
             ctxAero.fillStyle = '#1a1a1a';
             ctxAero.beginPath(); ctxAero.arc(cx - 70, cy + 25, 35, 0, Math.PI*2); ctxAero.fill();
             ctxAero.beginPath(); ctxAero.arc(cx + 140, cy + 20, 40, 0, Math.PI*2); ctxAero.fill();
@@ -419,7 +531,6 @@
             ctxAero.beginPath(); ctxAero.arc(cx - 70, cy + 25, 15, 0, Math.PI*2); ctxAero.fill();
             ctxAero.beginPath(); ctxAero.arc(cx + 140, cy + 20, 18, 0, Math.PI*2); ctxAero.fill();
 
-            // Front Wing Setup Assembly
             ctxAero.fillStyle = '#CC0000'; 
             ctxAero.fillRect(cx - 158, cy + 18, 15, 6); 
             ctxAero.save();
@@ -429,7 +540,6 @@
             ctxAero.fillRect(-20, -4, 45, 8); 
             ctxAero.restore();
 
-            // Rear Assembly Rig
             ctxAero.fillStyle = '#222';
             ctxAero.fillRect(cx + 160, cy - 85, 25, 80); 
             ctxAero.fillStyle = '#fff';
@@ -439,7 +549,6 @@
             ctxAero.fillRect(-17.5, -4, 35, 8); 
             ctxAero.restore();
 
-            // Actuator DRS State Control Flap
             ctxAero.save();
             ctxAero.translate(cx + 180, cy - 75);
             if (drs) {
@@ -451,7 +560,6 @@
             ctxAero.fillRect(-15, -3, 30, 6);
             ctxAero.restore();
             
-            // Physics Vectors
             function drawArrow(sX, sY, eX, eY, color) {
                 ctxAero.strokeStyle = color; ctxAero.fillStyle = color; ctxAero.lineWidth = 6;
                 ctxAero.beginPath(); ctxAero.moveTo(sX, sY); ctxAero.lineTo(eX, eY); ctxAero.stroke();
@@ -472,9 +580,7 @@
             }
         }
 
-        // Run
         update();
-
     </script>
 </body>
 </html>
