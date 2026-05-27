@@ -217,42 +217,32 @@
         pathOriginal.bezierCurveTo(50, 460, 50, 530, 150, 530);
 
         // --- 2. UN-COMPRESSED REAL SCALE Circuit Montréal Geometry ---
-        // Stretched out across a sprawling 4500px horizontal canvas map bounds
         const pathCanada = (() => {
             const p = new Path2D();
-            // Start Line down on the long horizontal floor straight
             p.moveTo(800, 1200);
-            p.lineTo(3200, 1200); // Massive Pit Straight acceleration segment
+            p.lineTo(3200, 1200); 
             
-            // Turns 1 & 2: Authentic tight Senna Hairpin hook loop
             p.bezierCurveTo(3450, 1200, 3600, 1050, 3450, 900);
             p.bezierCurveTo(3350, 800, 3150, 950, 3050, 850);
             
-            // Turns 3 & 4 Chicane
             p.lineTo(2850, 700);
             p.quadraticCurveTo(2750, 650, 2850, 600);
-            p.lineTo(3300, 600); // Straight down to Turn 6/7
+            p.lineTo(3300, 600); 
             
-            // Turn 6 & 7 Left-Right Flick Chicane
             p.bezierCurveTo(3450, 600, 3500, 500, 3350, 450);
-            p.lineTo(2900, 450); // Intermediate short straight
+            p.lineTo(2900, 450); 
             
-            // Turn 8 & 9 Bridge Chicane
             p.quadraticCurveTo(2750, 450, 2850, 350);
-            p.lineTo(4000, 350); // Extended run down to the Hairpin
+            p.lineTo(4000, 350); 
             
-            // Turn 10: L'Épingle Hairpin (Extremely tight, accurate loop)
             p.bezierCurveTo(4350, 350, 4450, 200, 4100, 100);
             p.bezierCurveTo(3950, 0, 3700, 100, 3500, 100);
             
-            // Droit du Casino: The Legendary Long Back Straightaway
             p.lineTo(600, 100);
             
-            // Turns 13 & 14: Wall of Champions chicane entry and deceleration drop
             p.lineTo(400, 350);
             p.lineTo(550, 600);
             
-            // Sweeping left back corner joining into the main straightaway
             p.bezierCurveTo(700, 800, 500, 1200, 800, 1200);
             return p;
         })();
@@ -276,13 +266,13 @@
             },
             canada: {
                 path: pathCanada,
-                start: { x: 1200, y: 1200, angle: 0 }, // Heading east down the pit straight
+                start: { x: 1200, y: 1200, angle: 0 }, 
                 targets: { s1: 14.5, s2: 16.2, s3: 11.8 },
                 pb: { s1: Infinity, s2: Infinity, s3: Infinity, lap: Infinity },
                 checkers: {
-                    finish: { x: 1500, y1: 1150, y2: 1250, color: '#fff' },   // Main Start/Finish Gate
-                    s1: { x: 3000, y1: 550, y2: 650, color: '#ffff55' },     // Sector 1 (After T4 exit)
-                    s2: { x: 2200, y1: 50, y2: 150, color: '#d155ff' }       // Sector 2 (Casino Straight)
+                    finish: { x: 1500, y1: 1150, y2: 1250, color: '#fff' },   
+                    s1: { x: 3000, y1: 550, y2: 650, color: '#ffff55' },     
+                    s2: { x: 2200, y1: 50, y2: 150, color: '#d155ff' }       
                 },
                 gates: {
                     s1: (x, y, px) => px <= 3000 && x > 3000 && y > 500 && y < 700,
@@ -312,6 +302,30 @@
         window.addEventListener('keyup', (e) => {
             if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
         });
+
+        // --- LOCAL STORAGE FUNCTIONS ---
+        function savePBs(trackId) {
+            const pbData = tracks[trackId].pb;
+            localStorage.setItem(`gp_pb_${trackId}`, JSON.stringify(pbData));
+        }
+
+        function loadPBs() {
+            for (let trackId in tracks) {
+                const saved = localStorage.getItem(`gp_pb_${trackId}`);
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        // Ensure we safely copy values, fallback to Infinity if missing
+                        tracks[trackId].pb.s1 = parsed.s1 !== undefined ? parsed.s1 : Infinity;
+                        tracks[trackId].pb.s2 = parsed.s2 !== undefined ? parsed.s2 : Infinity;
+                        tracks[trackId].pb.s3 = parsed.s3 !== undefined ? parsed.s3 : Infinity;
+                        tracks[trackId].pb.lap = parsed.lap !== undefined ? parsed.lap : Infinity;
+                    } catch (e) {
+                        console.error("Error loading saved times for track: " + trackId, e);
+                    }
+                }
+            }
+        }
 
         function switchTrack(trackId) {
             document.querySelectorAll('.track-btn').forEach(btn => btn.classList.remove('active'));
@@ -346,7 +360,6 @@
             if (car.speed > maxSpeedBase) car.speed = maxSpeedBase;
             if (car.speed < 0) car.speed = 0;
 
-            // Physics execution happens in unscaled absolute coordinates
             ctxTrack.lineWidth = trackWidth;
             const onTrack = ctxTrack.isPointInStroke(currentTrackData.path, car.x, car.y);
             if (!onTrack) car.speed *= car.grassFriction; 
@@ -389,6 +402,7 @@
                     if (lastS1 < currentTrackData.pb.s1) {
                         currentTrackData.pb.s1 = lastS1;
                         s1BestUI.innerText = lastS1.toFixed(3);
+                        savePBs(currentTrackId); // Persistent Save
                     }
                     currentSector = 2; sectorStartTime = Date.now(); sec2Box.className = "dash-panel active";
                 }
@@ -406,6 +420,7 @@
                     if (lastS2 < currentTrackData.pb.s2) {
                         currentTrackData.pb.s2 = lastS2;
                         s2BestUI.innerText = lastS2.toFixed(3);
+                        savePBs(currentTrackId); // Persistent Save
                     }
                     currentSector = 3; sectorStartTime = Date.now(); sec3Box.className = "dash-panel active";
                 }
@@ -425,8 +440,10 @@
                     else if (lastS3 < currentTrackData.pb.s3) sec3Box.className = "dash-panel green";
                     else sec3Box.className = "dash-panel yellow";
                     
+                    let pbChanged = false;
                     if (lastS3 < currentTrackData.pb.s3) {
                         currentTrackData.pb.s3 = lastS3; s3BestUI.innerText = lastS3.toFixed(3);
+                        pbChanged = true;
                     }
 
                     const finalLapTime = lastS1 + lastS2 + lastS3;
@@ -434,6 +451,11 @@
                     
                     if (finalLapTime < currentTrackData.pb.lap) {
                         currentTrackData.pb.lap = finalLapTime; lapBestUI.innerText = finalLapTime.toFixed(3);
+                        pbChanged = true;
+                    }
+                    
+                    if (pbChanged) {
+                        savePBs(currentTrackId); // Persistent Save
                     }
                     
                     currentSector = 1; lapStartTime = Date.now(); sectorStartTime = Date.now();
@@ -457,57 +479,48 @@
             ctxTrack.clearRect(0, 0, trackCanvas.width, trackCanvas.height);
             
             ctxTrack.save();
-            // --- NATIVE CAMERA TRANSFORMATION MATRIX ---
-            // 1. Move camera origin to center of viewport container
             ctxTrack.translate(trackCanvas.width / 2, trackCanvas.height / 2);
-            // 2. Zoom rendering view onto the focused zone
             ctxTrack.scale(zoomLevel, zoomLevel);
-            // 3. Shift tracking view inversely to follow the vehicle
             ctxTrack.translate(-car.x, -car.y);
 
-            // Draw circuit foundation line layout
             ctxTrack.strokeStyle = "#444"; ctxTrack.lineCap = "round"; ctxTrack.lineJoin = "round";
             ctxTrack.lineWidth = trackWidth; ctxTrack.stroke(currentTrackData.path);
             ctxTrack.strokeStyle = "#fff"; ctxTrack.lineWidth = trackWidth - 6; ctxTrack.stroke(currentTrackData.path);
             ctxTrack.strokeStyle = "#1e3d1e"; ctxTrack.lineWidth = trackWidth - 10; ctxTrack.stroke(currentTrackData.path);
 
-            // Render Timing Lines inside the global camera space
             ctxTrack.lineWidth = 5; ctxTrack.setLineDash([5, 5]);
             const c = currentTrackData.checkers;
             
-            // Finish line
             ctxTrack.strokeStyle = c.finish.color; ctxTrack.beginPath(); 
             ctxTrack.moveTo(c.finish.x, c.finish.y1); ctxTrack.lineTo(c.finish.x, c.finish.y2);
             ctxTrack.stroke();
 
-            // Sector 1 line
             ctxTrack.strokeStyle = c.s1.color; ctxTrack.beginPath(); 
             ctxTrack.moveTo(c.s1.x, c.s1.y1); ctxTrack.lineTo(c.s1.x, c.s1.y2);
             ctxTrack.stroke();
 
-            // Sector 2 line
             ctxTrack.strokeStyle = c.s2.color; ctxTrack.beginPath(); 
             ctxTrack.moveTo(c.s2.x, c.s2.y1); ctxTrack.lineTo(c.s2.x, c.s2.y2);
             ctxTrack.stroke();
             
             ctxTrack.setLineDash([]); 
 
-            // Render Vehicle centered on its world coordinate position
             ctxTrack.save();
             ctxTrack.translate(car.x, car.y); 
             ctxTrack.rotate(car.angle);
             
-            // Scaled detail modeling for focused close up view
-            ctxTrack.fillStyle = "#ff2222"; ctxTrack.fillRect(-8, -4, 16, 8); // Sidepods
-            ctxTrack.fillStyle = "#111111"; ctxTrack.fillRect(2, -5, 3, 10);   // Front Wing
-            ctxTrack.fillStyle = "#111111"; ctxTrack.fillRect(-9, -5, 3, 10);  // Rear Wing
-            ctxTrack.fillStyle = "#ffffff"; ctxTrack.fillRect(4, -1.5, 3, 3);   // Nosecone
-            ctxTrack.fillStyle = "#ffff00"; ctxTrack.fillRect(-1, -1, 2, 2);    // Driver Helmet
+            ctxTrack.fillStyle = "#ff2222"; ctxTrack.fillRect(-8, -4, 16, 8); 
+            ctxTrack.fillStyle = "#111111"; ctxTrack.fillRect(2, -5, 3, 10);   
+            ctxTrack.fillStyle = "#111111"; ctxTrack.fillRect(-9, -5, 3, 10);  
+            ctxTrack.fillStyle = "#ffffff"; ctxTrack.fillRect(4, -1.5, 3, 3);   
+            ctxTrack.fillStyle = "#ffff00"; ctxTrack.fillRect(-1, -1, 2, 2);    
             
             ctxTrack.restore(); 
-            ctxTrack.restore(); // Restores transformation stack safely for the next refresh frame
+            ctxTrack.restore(); 
         }
 
+        // Initialize saved data before rendering anything
+        loadPBs(); 
         switchTrack('original'); 
         update();
     </script>
