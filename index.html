@@ -3,255 +3,179 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive F1 Simulator - Compact Edition</title>
+    <title>Grand Prix Time Trial - Camera Follow</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #121212;
             color: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 10px 20px;
             margin: 0;
-            overflow: hidden;
-        }
-        .main-container {
-            display: flex;
-            gap: 20px;
-            width: 100%;
-            max-width: 1400px;
-            justify-content: center;
-            align-items: flex-start;
-            margin-top: 5px;
-        }
-        .left-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 320px;
-            flex-shrink: 0;
-        }
-        .right-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            align-items: center;
-        }
-        .panel {
-            background-color: #1e1e1e;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        }
-        h2 { margin-top: 0; font-size: 1.1em; border-bottom: 1px solid #444; padding-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;}
-        label { display: flex; justify-content: space-between; margin-top: 10px; font-weight: bold; font-size: 0.95em;}
-        input[type="range"] { width: 100%; margin: 8px 0; cursor: pointer; }
-        
-        /* Compact Controls UI */
-        .control-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 5px;
-            font-size: 0.9em;
-            color: #ccc;
-        }
-        .control-grid strong { color: #ff3333; }
-
-        .stat-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-        .stat-box {
-            background: #2a2a2a;
-            padding: 8px;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 0.9em;
-        }
-        .stat-box.red { color: #ff5555; }
-        .stat-box.blue { color: #55aaff; }
-        .stat-box.green { color: #55ffaa; }
-        .stat-value { font-size: 1.4em; font-weight: bold; margin-top: 3px; }
-
-        canvas {
-            background-color: #000;
-            border-radius: 8px;
-            border: 2px solid #333;
-        }
-        #trackCanvas { background-color: #2b4a2b; /* Grass color */ }
-
-        /* --- F1 Broadcast Style Ticker Bar --- */
-        .f1-tv-ticker {
-            display: flex;
-            width: 1000px;
-            background: rgba(15, 15, 15, 0.95);
-            border-left: 6px solid #ff3333;
-            font-family: 'Arial Black', Impact, sans-serif;
-            text-transform: uppercase;
-            font-size: 1.05em;
             box-sizing: border-box;
-            border-radius: 4px;
-            overflow: hidden;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.7);
-            align-items: center;
+            height: 100vh;
+            overflow: hidden; 
+            display: flex;
         }
-        .ticker-label {
-            background: #ff3333;
-            color: #fff;
-            padding: 12px 25px;
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 270px;
+            background: #1a1a1a;
+            border-right: 4px solid #ff3333;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        .sidebar-title {
+            text-align: center;
+            font-size: 1.2em;
             font-weight: 900;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            color: #aaa;
         }
-        .ticker-sector {
+        .track-btn {
+            background: #252525;
+            color: #fff;
+            border: none;
+            padding: 15px 20px;
+            text-align: left;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 0px solid #ff3333;
+            margin-bottom: 5px;
+        }
+        .track-btn:hover { background: #333; }
+        .track-btn.active {
+            background: #ff3333;
+            border-left: 8px solid #fff;
+            padding-left: 12px;
+        }
+        .controls-hint {
+            margin-top: auto;
+            padding: 20px;
+            color: #666;
+            font-size: 0.85em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .controls-hint strong { color: #bbb; }
+
+        /* --- Main Content Area --- */
+        .main-content {
             flex: 1;
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            background-color: #2b4a2b; 
+            position: relative;
+        }
+
+        /* --- Top Dashboard --- */
+        .top-dashboard {
+            display: flex;
+            width: 100%;
+            background: rgba(20, 20, 20, 0.95);
+            border-bottom: 2px solid #111;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            flex-shrink: 0; 
+            z-index: 5;
+        }
+        .dash-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
             align-items: center;
-            padding: 12px 20px;
+            padding: 10px;
             border-right: 1px solid #2a2a2a;
-            background: #161616;
-            color: #666;
-            transition: background 0.2s, color 0.2s;
+            transition: background 0.2s;
         }
-        .ticker-sector.active {
-            background: #282828;
-            color: #fff;
+        .speed-panel { background: #111; flex: 0.8; border-right: 2px solid #333;}
+        .lap-panel { background: #0b0b0b; flex: 1.2; border-left: 2px solid #333;}
+        
+        .panel-lbl { font-size: 0.75em; color: #888; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
+        .speed-panel .panel-lbl, .lap-panel .panel-lbl { color: #ff3333; }
+        .panel-val { font-family: monospace; font-size: 1.4em; font-weight: bold; color: #fff; }
+        .lap-panel .panel-val { font-size: 1.6em; color: #ffff55; }
+        .panel-sub { font-family: monospace; font-size: 0.85em; color: #aaa; margin-top: 4px; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; }
+        .panel-sub span { color: #00ff66; font-weight: bold; }
+
+        .dash-panel.active { background: #282828; }
+        .dash-panel.purple { background: #b000d2; }
+        .dash-panel.green { background: #00b050; }
+        .dash-panel.yellow { background: #e5b100; }
+        .dash-panel.purple .panel-lbl, .dash-panel.green .panel-lbl, .dash-panel.yellow .panel-lbl { color: #fff; }
+
+        /* --- Canvas --- */
+        .canvas-container {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
         }
-        .ticker-sector.purple {
-            background: #b000d2;
-            color: #fff;
-        }
-        .ticker-sector.green {
-            background: #00b050;
-            color: #fff;
-        }
-        .ticker-sector.yellow {
-            background: #e5b100;
-            color: #000;
-        }
-        .ticker-time {
-            font-family: monospace;
-            font-weight: bold;
-            font-size: 1.2em;
-        }
-        .ticker-total {
-            padding: 12px 25px;
-            background: #0b0b0b;
-            color: #ffff55;
-            font-family: monospace;
-            font-size: 1.25em;
-            font-weight: bold;
-            min-width: 140px;
-            text-align: center;
+        canvas {
+            background-color: transparent; 
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: top left; 
         }
     </style>
 </head>
 <body>
 
-    <div class="main-container">
-        <div class="left-panel">
-            <div class="panel" style="border-left: 4px solid #ff3333;">
-                <h2>Cockpit Controls</h2>
-                <div class="control-grid">
-                    <div><strong>Drive:</strong> Arrow Keys or WASD</div>
-                    <div><strong>DRS Wing:</strong> Spacebar (Hold)</div>
-                </div>
+    <div class="sidebar">
+        <div class="sidebar-title">Track Select</div>
+        <button id="btn-original" class="track-btn active" onclick="switchTrack('original')">Track 1: Original Loop</button>
+        <button id="btn-canada" class="track-btn" onclick="switchTrack('canada')">Track 2: Circuit Montréal</button>
+        
+        <div class="controls-hint">
+            Controls: <br><br><strong>ARROW KEYS</strong> or <strong>WASD</strong><br><br>Speed up, brake, and steer!
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="top-dashboard">
+            <div class="dash-panel speed-panel">
+                <div class="panel-lbl">SPEED (KM/H)</div>
+                <div class="panel-val" id="liveSpeed">0</div>
             </div>
-
-            <div class="panel">
-                <h2>Aerodynamic Setup</h2>
-                
-                <label for="wing">Front Wing Angle: <span id="wingVal">15</span>°</label>
-                <input type="range" id="wing" min="0" max="30" value="15">
-
-                <label for="rearWing">Rear Wing Angle: <span id="rearWingVal">20</span>°</label>
-                <input type="range" id="rearWing" min="5" max="35" value="20">
-                
-                <div style="margin-top: 10px; color: #55ffaa; font-weight: bold; font-size: 0.95em;">
-                    DRS Status: <span id="drsStatus" style="color: #ff5555;">CLOSED</span>
-                </div>
+            <div class="dash-panel" id="sec1Box">
+                <div class="panel-lbl">Sector 1</div>
+                <div class="panel-val" id="s1Time">--.---</div>
+                <div class="panel-sub">PB: <span id="s1Best">--.---</span></div>
             </div>
-
-            <div class="panel">
-                <h2>Live Telemetry</h2>
-                <div class="stat-grid">
-                    <div class="stat-box">
-                        Speed
-                        <div class="stat-value" id="liveSpeed">0</div>
-                        km/h
-                    </div>
-                    <div class="stat-box green">
-                        Grip Limit
-                        <div class="stat-value" id="liveGrip">0</div>
-                        km/h
-                    </div>
-                    <div class="stat-box red">
-                        Drag Penalty
-                        <div class="stat-value" id="dragVal">0</div>
-                        N
-                    </div>
-                    <div class="stat-box blue">
-                        Downforce
-                        <div class="stat-value" id="downforceVal">0</div>
-                        N
-                    </div>
-                </div>
+            <div class="dash-panel" id="sec2Box">
+                <div class="panel-lbl">Sector 2</div>
+                <div class="panel-val" id="s2Time">--.---</div>
+                <div class="panel-sub">PB: <span id="s2Best">--.---</span></div>
             </div>
-
-            <div class="panel">
-                <h2>Session Record</h2>
-                <div style="text-align: center; padding: 5px 0;">
-                    <div style="color: #aaa; font-size: 0.85em; text-transform: uppercase;">All-Time Best Lap</div>
-                    <div id="bestLap" style="font-size: 2em; font-family: monospace; font-weight: bold; color: #fff; margin-top: 3px;">--.---</div>
-                </div>
+            <div class="dash-panel" id="sec3Box">
+                <div class="panel-lbl">Sector 3</div>
+                <div class="panel-val" id="s3Time">--.---</div>
+                <div class="panel-sub">PB: <span id="s3Best">--.---</span></div>
+            </div>
+            <div class="dash-panel lap-panel">
+                <div class="panel-lbl">CURRENT LAP</div>
+                <div class="panel-val" id="tvLapTime">00.000</div>
+                <div class="panel-sub">BEST: <span id="lapBest">--.---</span></div>
             </div>
         </div>
 
-        <div class="right-panel">
-            <canvas id="trackCanvas" width="1000" height="600"></canvas>
-            
-            <div class="f1-tv-ticker">
-                <div class="ticker-label">Timing</div>
-                
-                <div id="sec1Box" class="ticker-sector">
-                    <span>Sector 1</span>
-                    <span id="s1Time" class="ticker-time">--.---</span>
-                </div>
-                
-                <div id="sec2Box" class="ticker-sector">
-                    <span>Sector 2</span>
-                    <span id="s2Time" class="ticker-time">--.---</span>
-                </div>
-                
-                <div id="sec3Box" class="ticker-sector">
-                    <span>Sector 3</span>
-                    <span id="s3Time" class="ticker-time">--.---</span>
-                </div>
-                
-                <div id="tvLapTime" class="ticker-total">00.000</div>
-            </div>
+        <div class="canvas-container">
+            <canvas id="trackCanvas" width="1600" height="950"></canvas>
         </div>
     </div>
 
     <script>
-        // --- Setup and DOM Elements ---
         const trackCanvas = document.getElementById('trackCanvas');
         const ctxTrack = trackCanvas.getContext('2d');
-
-        const wingInput = document.getElementById('wing');
-        const rearWingInput = document.getElementById('rearWing');
-        const wingVal = document.getElementById('wingVal');
-        const rearWingVal = document.getElementById('rearWingVal');
-        const drsStatusUI = document.getElementById('drsStatus');
         const liveSpeedUI = document.getElementById('liveSpeed');
-        const liveGripUI = document.getElementById('liveGrip');
-        const dragValUI = document.getElementById('dragVal');
-        const downforceValUI = document.getElementById('downforceVal');
-        const bestLapUI = document.getElementById('bestLap');
 
-        // TV Graphic Ticker Handles
         const sec1Box = document.getElementById('sec1Box');
         const sec2Box = document.getElementById('sec2Box');
         const sec3Box = document.getElementById('sec3Box');
@@ -259,158 +183,189 @@
         const s2Time = document.getElementById('s2Time');
         const s3Time = document.getElementById('s3Time');
         const tvLapTime = document.getElementById('tvLapTime');
-
-        // --- Physics Constants ---
-        const rho = 1.225; 
-        const area = 1.5;  
         
-        // --- Car Physics State ---
+        const s1BestUI = document.getElementById('s1Best');
+        const s2BestUI = document.getElementById('s2Best');
+        const s3BestUI = document.getElementById('s3Best');
+        const lapBestUI = document.getElementById('lapBest');
+
+        const trackWidth = 55; // Slightly wider track profile for optimal camera tracking gameplay
+        const maxSpeedBase = 325; 
+        const maxGripSpeed = 210; 
+        const zoomLevel = 2.2;  // Viewport scale configuration (2.2x close zoom)
+
+        // --- 1. Original Short Track Restored (World Coordinates) ---
+        const pathOriginal = new Path2D();
+        pathOriginal.moveTo(150, 530); 
+        pathOriginal.lineTo(550, 530); 
+        pathOriginal.lineTo(600, 530);
+        pathOriginal.lineTo(620, 490);
+        pathOriginal.lineTo(660, 510);
+        pathOriginal.bezierCurveTo(780, 540, 880, 410, 820, 310); 
+        pathOriginal.bezierCurveTo(760, 210, 920, 150, 880, 80); 
+        pathOriginal.lineTo(180, 80); 
+        pathOriginal.arc(180, 110, 30, -Math.PI / 2, Math.PI / 2, true); 
+        pathOriginal.lineTo(350, 140);
+        pathOriginal.bezierCurveTo(500, 140, 650, 100, 600, 250); 
+        pathOriginal.quadraticCurveTo(580, 320, 480, 320); 
+        pathOriginal.lineTo(430, 320); 
+        pathOriginal.lineTo(430, 400); 
+        pathOriginal.lineTo(300, 400); 
+        pathOriginal.lineTo(260, 400); 
+        pathOriginal.bezierCurveTo(260, 240, 120, 240, 120, 420); 
+        pathOriginal.lineTo(150, 460); 
+        pathOriginal.bezierCurveTo(50, 460, 50, 530, 150, 530);
+
+        // --- 2. UN-COMPRESSED REAL SCALE Circuit Montréal Geometry ---
+        // Stretched out across a sprawling 4500px horizontal canvas map bounds
+        const pathCanada = (() => {
+            const p = new Path2D();
+            // Start Line down on the long horizontal floor straight
+            p.moveTo(800, 1200);
+            p.lineTo(3200, 1200); // Massive Pit Straight acceleration segment
+            
+            // Turns 1 & 2: Authentic tight Senna Hairpin hook loop
+            p.bezierCurveTo(3450, 1200, 3600, 1050, 3450, 900);
+            p.bezierCurveTo(3350, 800, 3150, 950, 3050, 850);
+            
+            // Turns 3 & 4 Chicane
+            p.lineTo(2850, 700);
+            p.quadraticCurveTo(2750, 650, 2850, 600);
+            p.lineTo(3300, 600); // Straight down to Turn 6/7
+            
+            // Turn 6 & 7 Left-Right Flick Chicane
+            p.bezierCurveTo(3450, 600, 3500, 500, 3350, 450);
+            p.lineTo(2900, 450); // Intermediate short straight
+            
+            // Turn 8 & 9 Bridge Chicane
+            p.quadraticCurveTo(2750, 450, 2850, 350);
+            p.lineTo(4000, 350); // Extended run down to the Hairpin
+            
+            // Turn 10: L'Épingle Hairpin (Extremely tight, accurate loop)
+            p.bezierCurveTo(4350, 350, 4450, 200, 4100, 100);
+            p.bezierCurveTo(3950, 0, 3700, 100, 3500, 100);
+            
+            // Droit du Casino: The Legendary Long Back Straightaway
+            p.lineTo(600, 100);
+            
+            // Turns 13 & 14: Wall of Champions chicane entry and deceleration drop
+            p.lineTo(400, 350);
+            p.lineTo(550, 600);
+            
+            // Sweeping left back corner joining into the main straightaway
+            p.bezierCurveTo(700, 800, 500, 1200, 800, 1200);
+            return p;
+        })();
+
+        const tracks = {
+            original: {
+                path: pathOriginal,
+                start: { x: 180, y: 530, angle: 0 },
+                targets: { s1: 5.2, s2: 6.4, s3: 4.8 },
+                pb: { s1: Infinity, s2: Infinity, s3: Infinity, lap: Infinity },
+                checkers: {
+                    finish: { x: 200, y1: 510, y2: 550, color: '#fff' },
+                    s1: { x: 400, y1: 60, y2: 100, color: '#ffff55' },
+                    s2: { x: 280, y1: 380, y2: 420, color: '#d155ff' }
+                },
+                gates: {
+                    s1: (x, y, px) => px >= 400 && x < 400 && y < 120,
+                    s2: (x, y, px) => px >= 280 && x < 280 && y > 360 && y < 440,
+                    finish: (x, y, px) => px <= 200 && x > 200 && y > 490 && y < 570
+                }
+            },
+            canada: {
+                path: pathCanada,
+                start: { x: 1200, y: 1200, angle: 0 }, // Heading east down the pit straight
+                targets: { s1: 14.5, s2: 16.2, s3: 11.8 },
+                pb: { s1: Infinity, s2: Infinity, s3: Infinity, lap: Infinity },
+                checkers: {
+                    finish: { x: 1500, y1: 1150, y2: 1250, color: '#fff' },   // Main Start/Finish Gate
+                    s1: { x: 3000, y1: 550, y2: 650, color: '#ffff55' },     // Sector 1 (After T4 exit)
+                    s2: { x: 2200, y1: 50, y2: 150, color: '#d155ff' }       // Sector 2 (Casino Straight)
+                },
+                gates: {
+                    s1: (x, y, px) => px <= 3000 && x > 3000 && y > 500 && y < 700,
+                    s2: (x, y, px) => px >= 2200 && x < 2200 && y > 0 && y < 200,
+                    finish: (x, y, px) => px <= 1500 && x > 1500 && y > 1100 && y < 1300
+                }
+            }
+        };
+
+        // --- GLOBAL STATES ---
+        let currentTrackId = 'original';
+        let currentTrackData = tracks[currentTrackId];
+        
         let car = {
-            x: 180, y: 530, 
-            angle: 0, 
-            speed: 0, 
-            maxSpeedBase: 360, 
-            acceleration: 2.8,
-            friction: 0.985, 
-            grassFriction: 0.82, 
-            turnSpeed: 0.035
+            x: 0, y: 0, angle: 0, speed: 0, 
+            acceleration: 3.2, friction: 0.988, grassFriction: 0.80, turnSpeed: 0.038
         };
 
         let keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false, KeyW: false, KeyS: false, KeyA: false, KeyD: false };
-        let drsActive = false;
-        
-        // --- Master Track Mapping ---
-        const trackPath = new Path2D();
-        const trackWidth = 40; 
-
-        // 1. Pit Straight
-        trackPath.moveTo(150, 530); 
-        trackPath.lineTo(550, 530); 
-        
-        // 2. Turn 1 & 2 Quick Flick
-        trackPath.lineTo(600, 530);
-        trackPath.lineTo(620, 490);
-        trackPath.lineTo(660, 510);
-        
-        // 3. Right-Side Technical S-Curves
-        trackPath.bezierCurveTo(780, 540, 880, 410, 820, 310); 
-        trackPath.bezierCurveTo(760, 210, 920, 150, 880, 80); 
-        
-        // 4. Back Straight (Contains Sector 1 Split Gate)
-        trackPath.lineTo(180, 80); 
-        
-        // 5. Grandstand Hairpin
-        trackPath.arc(180, 110, 30, -Math.PI / 2, Math.PI / 2, true); 
-        
-        // 6. The Out-wash Spoon Curve
-        trackPath.lineTo(350, 140);
-        trackPath.bezierCurveTo(500, 140, 650, 100, 600, 250); 
-        trackPath.quadraticCurveTo(580, 320, 480, 320); 
-        
-        // 7. Montreal Chicane 
-        trackPath.lineTo(430, 320); 
-        trackPath.lineTo(430, 400); 
-        trackPath.lineTo(300, 400); 
-        
-        // 8. Infield Carousel (Decreasing radius challenge curve)
-        trackPath.lineTo(260, 400); 
-        trackPath.bezierCurveTo(260, 240, 120, 240, 120, 420); 
-        trackPath.lineTo(150, 460); 
-        
-        // 9. Fast Left Hand Banking Bowl
-        trackPath.bezierCurveTo(50, 460, 50, 530, 150, 530);
-
-        // --- Timing & Broadcast Logic Configurations ---
-        let lapStartTime = 0;
-        let sectorStartTime = 0;
-        let currentSector = 1;
-        let hasCrossedStartLine = false;
-
-        let bestLapTime = Infinity;
-        
-        // Purple Sector Target Benchmarks
-        const targetS1 = 5.20;
-        const targetS2 = 6.40;
-        const targetS3 = 4.80;
-
-        // Personal Record Registers
-        let pbS1 = Infinity, pbS2 = Infinity, pbS3 = Infinity;
+        let lapStartTime = 0, sectorStartTime = 0, currentSector = 1, hasCrossedStartLine = false;
         let lastS1 = 0, lastS2 = 0, lastS3 = 0;
 
-        // --- Input Controls Handling ---
         window.addEventListener('keydown', (e) => {
             if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
-            if (e.code === 'Space') { e.preventDefault(); drsActive = true; }
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
         });
         window.addEventListener('keyup', (e) => {
             if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
-            if (e.code === 'Space') drsActive = false;
         });
 
-        // --- Main Simulation Loop ---
+        function switchTrack(trackId) {
+            document.querySelectorAll('.track-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + trackId).classList.add('active');
+
+            currentTrackId = trackId;
+            currentTrackData = tracks[trackId];
+            
+            car.x = currentTrackData.start.x;
+            car.y = currentTrackData.start.y;
+            car.angle = currentTrackData.start.angle;
+            car.speed = 0;
+
+            hasCrossedStartLine = false;
+            currentSector = 1;
+            lapStartTime = 0;
+            
+            sec1Box.className = "dash-panel"; sec2Box.className = "dash-panel"; sec3Box.className = "dash-panel";
+            s1Time.innerText = "--.---"; s2Time.innerText = "--.---"; s3Time.innerText = "--.---"; tvLapTime.innerText = "00.000";
+
+            s1BestUI.innerText = currentTrackData.pb.s1 === Infinity ? "--.---" : currentTrackData.pb.s1.toFixed(3);
+            s2BestUI.innerText = currentTrackData.pb.s2 === Infinity ? "--.---" : currentTrackData.pb.s2.toFixed(3);
+            s3BestUI.innerText = currentTrackData.pb.s3 === Infinity ? "--.---" : currentTrackData.pb.s3.toFixed(3);
+            lapBestUI.innerText = currentTrackData.pb.lap === Infinity ? "--.---" : currentTrackData.pb.lap.toFixed(3);
+        }
+
         function update() {
-            const frontAngle = parseFloat(wingInput.value);
-            const rearAngle = parseFloat(rearWingInput.value);
-            
-            wingVal.innerText = frontAngle;
-            rearWingVal.innerText = rearAngle;
-            
-            drsStatusUI.innerText = drsActive ? "OPEN" : "CLOSED";
-            drsStatusUI.style.color = drsActive ? "#55ffaa" : "#ff5555";
+            if (keys.ArrowUp || keys.KeyW) car.speed += car.acceleration;
+            else if (keys.ArrowDown || keys.KeyS) car.speed -= car.acceleration * 2.2; 
+            else car.speed *= car.friction; 
 
-            const effectiveRearAngle = drsActive ? 0 : rearAngle;
-
-            // Aerodynamics Vectors Math
-            const v_ms = car.speed / 3.6; 
-            const Cd = 0.6 + (frontAngle * 0.015) + (effectiveRearAngle * 0.025);
-            const Cl = 2.0 + (frontAngle * 0.08) + (effectiveRearAngle * 0.1);
-
-            const dragForce = 0.5 * rho * (v_ms * v_ms) * Cd * area;
-            const downforceForce = 0.5 * rho * (v_ms * v_ms) * Cl * area;
-            
-            let currentMaxSpeed = car.maxSpeedBase - (Cd * 45); 
-            if (currentMaxSpeed < 100) currentMaxSpeed = 100;
-
-            const baseGripSpeed = 105; 
-            const maxGripSpeed = baseGripSpeed + (Cl * 24); 
-
-            // Accelerator and Brake Physics Engine
-            if (keys.ArrowUp || keys.KeyW) {
-                car.speed += car.acceleration;
-            } else if (keys.ArrowDown || keys.KeyS) {
-                car.speed -= car.acceleration * 2.0; 
-            } else {
-                car.speed *= car.friction; 
-            }
-
-            if (car.speed > currentMaxSpeed) car.speed = currentMaxSpeed;
+            if (car.speed > maxSpeedBase) car.speed = maxSpeedBase;
             if (car.speed < 0) car.speed = 0;
 
-            // Grass Detection Bounds Check
+            // Physics execution happens in unscaled absolute coordinates
             ctxTrack.lineWidth = trackWidth;
-            const onTrack = ctxTrack.isPointInStroke(trackPath, car.x, car.y);
-            if (!onTrack) {
-                car.speed *= car.grassFriction; 
-            }
+            const onTrack = ctxTrack.isPointInStroke(currentTrackData.path, car.x, car.y);
+            if (!onTrack) car.speed *= car.grassFriction; 
 
-            // Dynamic Lateral Grip Understeer Engine
             let currentTurnSpeed = car.turnSpeed;
             if (car.speed > maxGripSpeed) {
                 const understeerFactor = maxGripSpeed / car.speed;
-                currentTurnSpeed *= (understeerFactor * 0.7); 
+                currentTurnSpeed *= (understeerFactor * 0.65); 
             }
 
             if (keys.ArrowLeft || keys.KeyA) car.angle -= currentTurnSpeed;
             if (keys.ArrowRight || keys.KeyD) car.angle += currentTurnSpeed;
 
             const prevX = car.x;
+            const prevY = car.y;
 
-            // Step Coordinate Update
-            car.x += Math.cos(car.angle) * (car.speed * 0.013); 
-            car.y += Math.sin(car.angle) * (car.speed * 0.013);
+            car.x += Math.cos(car.angle) * (car.speed * 0.015); 
+            car.y += Math.sin(car.angle) * (car.speed * 0.015);
 
-            // --- Real-time Timing Overlay Rules Engine ---
             if (hasCrossedStartLine) {
                 const totalElapsed = (Date.now() - lapStartTime) / 1000;
                 tvLapTime.innerText = totalElapsed.toFixed(3);
@@ -421,172 +376,139 @@
                 if (currentSector === 3) s3Time.innerText = currentSecElapsed.toFixed(3);
             }
 
-            // TRIGGER SPLIT: Sector 1 Gate Escape (Crossing X=400 left-bound along the backstraight)
-            if (prevX >= 400 && car.x < 400 && car.y < 120) {
+            // --- TIMING GATES LOGIC ---
+            if (currentTrackData.gates.s1(car.x, car.y, prevX, prevY)) {
                 if (currentSector === 1 && hasCrossedStartLine) {
                     lastS1 = (Date.now() - sectorStartTime) / 1000;
                     s1Time.innerText = lastS1.toFixed(3);
                     
-                    // Assign Broadcast Graphics Ticker Colors
-                    if (lastS1 <= targetS1) {
-                        sec1Box.className = "ticker-sector purple";
-                    } else if (lastS1 < pbS1) {
-                        sec1Box.className = "ticker-sector green";
-                    } else {
-                        sec1Box.className = "ticker-sector yellow";
-                    }
+                    if (lastS1 <= currentTrackData.targets.s1) sec1Box.className = "dash-panel purple";
+                    else if (lastS1 < currentTrackData.pb.s1) sec1Box.className = "dash-panel green";
+                    else sec1Box.className = "dash-panel yellow";
                     
-                    pbS1 = Math.min(pbS1, lastS1);
-                    currentSector = 2;
-                    sectorStartTime = Date.now();
-                    sec2Box.className = "ticker-sector active";
+                    if (lastS1 < currentTrackData.pb.s1) {
+                        currentTrackData.pb.s1 = lastS1;
+                        s1BestUI.innerText = lastS1.toFixed(3);
+                    }
+                    currentSector = 2; sectorStartTime = Date.now(); sec2Box.className = "dash-panel active";
                 }
             }
 
-            // TRIGGER SPLIT: Sector 2 Gate Escape (Crossing X=280 left-bound out of Montreal Chicane)
-            if (prevX >= 280 && car.x < 280 && car.y > 360 && car.y < 440) {
+            if (currentTrackData.gates.s2(car.x, car.y, prevX, prevY)) {
                 if (currentSector === 2 && hasCrossedStartLine) {
                     lastS2 = (Date.now() - sectorStartTime) / 1000;
                     s2Time.innerText = lastS2.toFixed(3);
                     
-                    if (lastS2 <= targetS2) {
-                        sec2Box.className = "ticker-sector purple";
-                    } else if (lastS2 < pbS2) {
-                        sec2Box.className = "ticker-sector green";
-                    } else {
-                        sec2Box.className = "ticker-sector yellow";
-                    }
+                    if (lastS2 <= currentTrackData.targets.s2) sec2Box.className = "dash-panel purple";
+                    else if (lastS2 < currentTrackData.pb.s2) sec2Box.className = "dash-panel green";
+                    else sec2Box.className = "dash-panel yellow";
                     
-                    pbS2 = Math.min(pbS2, lastS2);
-                    currentSector = 3;
-                    sectorStartTime = Date.now();
-                    sec3Box.className = "ticker-sector active";
+                    if (lastS2 < currentTrackData.pb.s2) {
+                        currentTrackData.pb.s2 = lastS2;
+                        s2BestUI.innerText = lastS2.toFixed(3);
+                    }
+                    currentSector = 3; sectorStartTime = Date.now(); sec3Box.className = "dash-panel active";
                 }
             }
 
-            // TRIGGER SPLIT: Start/Finish Line Capture (Crossing X=200 right-bound onto Pit Straight)
-            if (prevX <= 200 && car.x > 200 && car.y > 490 && car.y < 570) {
+            if (currentTrackData.gates.finish(car.x, car.y, prevX, prevY)) {
                 if (!hasCrossedStartLine) {
                     hasCrossedStartLine = true;
-                    lapStartTime = Date.now();
-                    sectorStartTime = Date.now();
-                    currentSector = 1;
-                    
-                    // Initialize clean graphical slate
-                    sec1Box.className = "ticker-sector active";
-                    sec2Box.className = "ticker-sector";
-                    sec3Box.className = "ticker-sector";
-                    s1Time.innerText = "--.---";
-                    s2Time.innerText = "--.---";
-                    s3Time.innerText = "--.---";
+                    lapStartTime = Date.now(); sectorStartTime = Date.now(); currentSector = 1;
+                    sec1Box.className = "dash-panel active"; sec2Box.className = "dash-panel"; sec3Box.className = "dash-panel";
+                    s1Time.innerText = "--.---"; s2Time.innerText = "--.---"; s3Time.innerText = "--.---";
                 } else if (currentSector === 3) {
                     lastS3 = (Date.now() - sectorStartTime) / 1000;
                     s3Time.innerText = lastS3.toFixed(3);
                     
-                    if (lastS3 <= targetS3) {
-                        sec3Box.className = "ticker-sector purple";
-                    } else if (lastS3 < pbS3) {
-                        sec3Box.className = "ticker-sector green";
-                    } else {
-                        sec3Box.className = "ticker-sector yellow";
-                    }
+                    if (lastS3 <= currentTrackData.targets.s3) sec3Box.className = "dash-panel purple";
+                    else if (lastS3 < currentTrackData.pb.s3) sec3Box.className = "dash-panel green";
+                    else sec3Box.className = "dash-panel yellow";
                     
-                    pbS3 = Math.min(pbS3, lastS3);
+                    if (lastS3 < currentTrackData.pb.s3) {
+                        currentTrackData.pb.s3 = lastS3; s3BestUI.innerText = lastS3.toFixed(3);
+                    }
 
-                    // Lap Validation Summary
                     const finalLapTime = lastS1 + lastS2 + lastS3;
                     tvLapTime.innerText = finalLapTime.toFixed(3);
                     
-                    if (finalLapTime < bestLapTime) {
-                        bestLapTime = finalLapTime;
-                        bestLapUI.innerText = bestLapTime.toFixed(3) + "s";
+                    if (finalLapTime < currentTrackData.pb.lap) {
+                        currentTrackData.pb.lap = finalLapTime; lapBestUI.innerText = finalLapTime.toFixed(3);
                     }
                     
-                    // Instantaneous Cycle Transition to Next Lap
-                    currentSector = 1;
-                    lapStartTime = Date.now();
-                    sectorStartTime = Date.now();
-                    
+                    currentSector = 1; lapStartTime = Date.now(); sectorStartTime = Date.now();
                     setTimeout(() => {
                         if(currentSector === 1) { 
-                            sec1Box.className = "ticker-sector active";
-                            sec2Box.className = "ticker-sector";
-                            sec3Box.className = "ticker-sector";
+                            sec1Box.className = "dash-panel active"; sec2Box.className = "dash-panel"; sec3Box.className = "dash-panel";
+                            s1Time.innerText = "--.---"; s2Time.innerText = "--.---"; s3Time.innerText = "--.---";
                         }
-                    }, 1500); // Leave visual colors up for a moment down the straight
+                    }, 2500); 
                 }
             }
 
-            // Mechanical Telemetry Screen Updates
             liveSpeedUI.innerText = Math.round(car.speed);
-            liveGripUI.innerText = Math.round(maxGripSpeed);
-            dragValUI.innerText = Math.round(dragForce);
-            downforceValUI.innerText = Math.round(downforceForce);
-            
-            if (car.speed > maxGripSpeed && (keys.ArrowLeft || keys.KeyA || keys.ArrowRight || keys.KeyD)) {
-                liveSpeedUI.style.color = "#ffff55"; // Slipping tires visual cue
-            } else {
-                liveSpeedUI.style.color = "#ffffff";
-            }
+            liveSpeedUI.style.color = (car.speed > maxGripSpeed && (keys.ArrowLeft || keys.KeyA || keys.ArrowRight || keys.KeyD)) ? "#ffff55" : "#ffffff";
 
-            drawTrack();
+            renderViewport();
             requestAnimationFrame(update);
         }
 
-        // --- Render Track Layer Maps ---
-        function drawTrack() {
+        function renderViewport() {
             ctxTrack.clearRect(0, 0, trackCanvas.width, trackCanvas.height);
             
-            // Core Asphalt Compound Base
-            ctxTrack.strokeStyle = "#444";
-            ctxTrack.lineCap = "round";
-            ctxTrack.lineJoin = "round";
-            ctxTrack.lineWidth = trackWidth;
-            ctxTrack.stroke(trackPath);
-
-            // Exterior Kerbs
-            ctxTrack.strokeStyle = "#fff";
-            ctxTrack.lineWidth = trackWidth - 4;
-            ctxTrack.stroke(trackPath);
-            ctxTrack.strokeStyle = "#555";
-            ctxTrack.lineWidth = trackWidth - 8;
-            ctxTrack.stroke(trackPath);
-
-            // --- Physical Gate Sensor Markers ---
-            ctxTrack.lineWidth = 4;
-            ctxTrack.setLineDash([4, 4]);
-
-            // Start/Finish Line Checkers
-            ctxTrack.strokeStyle = "#ffffff";
-            ctxTrack.beginPath(); ctxTrack.moveTo(200, 510); ctxTrack.lineTo(200, 550); ctxTrack.stroke();
-
-            // S1 Split Gate line (Yellow)
-            ctxTrack.strokeStyle = "#ffff55";
-            ctxTrack.beginPath(); ctxTrack.moveTo(400, 60); ctxTrack.lineTo(400, 100); ctxTrack.stroke();
-
-            // S2 Split Gate line (Magenta)
-            ctxTrack.strokeStyle = "#d155ff";
-            ctxTrack.beginPath(); ctxTrack.moveTo(280, 380); ctxTrack.lineTo(280, 420); ctxTrack.stroke();
-            
-            ctxTrack.setLineDash([]); // Reset line formatting rules
-
-            // Render Race Car
             ctxTrack.save();
-            ctxTrack.translate(car.x, car.y);
+            // --- NATIVE CAMERA TRANSFORMATION MATRIX ---
+            // 1. Move camera origin to center of viewport container
+            ctxTrack.translate(trackCanvas.width / 2, trackCanvas.height / 2);
+            // 2. Zoom rendering view onto the focused zone
+            ctxTrack.scale(zoomLevel, zoomLevel);
+            // 3. Shift tracking view inversely to follow the vehicle
+            ctxTrack.translate(-car.x, -car.y);
+
+            // Draw circuit foundation line layout
+            ctxTrack.strokeStyle = "#444"; ctxTrack.lineCap = "round"; ctxTrack.lineJoin = "round";
+            ctxTrack.lineWidth = trackWidth; ctxTrack.stroke(currentTrackData.path);
+            ctxTrack.strokeStyle = "#fff"; ctxTrack.lineWidth = trackWidth - 6; ctxTrack.stroke(currentTrackData.path);
+            ctxTrack.strokeStyle = "#1e3d1e"; ctxTrack.lineWidth = trackWidth - 10; ctxTrack.stroke(currentTrackData.path);
+
+            // Render Timing Lines inside the global camera space
+            ctxTrack.lineWidth = 5; ctxTrack.setLineDash([5, 5]);
+            const c = currentTrackData.checkers;
+            
+            // Finish line
+            ctxTrack.strokeStyle = c.finish.color; ctxTrack.beginPath(); 
+            ctxTrack.moveTo(c.finish.x, c.finish.y1); ctxTrack.lineTo(c.finish.x, c.finish.y2);
+            ctxTrack.stroke();
+
+            // Sector 1 line
+            ctxTrack.strokeStyle = c.s1.color; ctxTrack.beginPath(); 
+            ctxTrack.moveTo(c.s1.x, c.s1.y1); ctxTrack.lineTo(c.s1.x, c.s1.y2);
+            ctxTrack.stroke();
+
+            // Sector 2 line
+            ctxTrack.strokeStyle = c.s2.color; ctxTrack.beginPath(); 
+            ctxTrack.moveTo(c.s2.x, c.s2.y1); ctxTrack.lineTo(c.s2.x, c.s2.y2);
+            ctxTrack.stroke();
+            
+            ctxTrack.setLineDash([]); 
+
+            // Render Vehicle centered on its world coordinate position
+            ctxTrack.save();
+            ctxTrack.translate(car.x, car.y); 
             ctxTrack.rotate(car.angle);
             
-            ctxTrack.fillStyle = "#ff0000"; 
-            ctxTrack.fillRect(-6, -3, 12, 6);
-            ctxTrack.fillStyle = "#000";    
-            ctxTrack.fillRect(0, -1.5, 3, 3);
-            ctxTrack.fillStyle = "#fff";    
-            ctxTrack.fillRect(4, -4, 2, 8);
-            ctxTrack.fillStyle = "#222";    
-            ctxTrack.fillRect(-6, -4, 1.5, 8);
-
-            ctxTrack.restore();
+            // Scaled detail modeling for focused close up view
+            ctxTrack.fillStyle = "#ff2222"; ctxTrack.fillRect(-8, -4, 16, 8); // Sidepods
+            ctxTrack.fillStyle = "#111111"; ctxTrack.fillRect(2, -5, 3, 10);   // Front Wing
+            ctxTrack.fillStyle = "#111111"; ctxTrack.fillRect(-9, -5, 3, 10);  // Rear Wing
+            ctxTrack.fillStyle = "#ffffff"; ctxTrack.fillRect(4, -1.5, 3, 3);   // Nosecone
+            ctxTrack.fillStyle = "#ffff00"; ctxTrack.fillRect(-1, -1, 2, 2);    // Driver Helmet
+            
+            ctxTrack.restore(); 
+            ctxTrack.restore(); // Restores transformation stack safely for the next refresh frame
         }
 
+        switchTrack('original'); 
         update();
     </script>
 </body>
