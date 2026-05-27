@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive F1 Simulator - Live Broadcast Edition</title>
+    <title>Interactive F1 Simulator - Compact Edition</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -12,12 +12,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
+            padding: 10px 20px;
             margin: 0;
-            overflow-x: hidden;
+            overflow: hidden;
         }
-        h1 { margin-bottom: 5px; color: #ff3333; }
-        .instructions { margin-bottom: 20px; color: #aaa; font-size: 1.1em; }
         .main-container {
             display: flex;
             gap: 20px;
@@ -25,45 +23,57 @@
             max-width: 1400px;
             justify-content: center;
             align-items: flex-start;
+            margin-top: 5px;
         }
         .left-panel {
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            width: 350px;
+            gap: 15px;
+            width: 320px;
             flex-shrink: 0;
         }
         .right-panel {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
             align-items: center;
         }
         .panel {
             background-color: #1e1e1e;
-            padding: 20px;
+            padding: 15px;
             border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
-        h2 { margin-top: 0; font-size: 1.2em; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        label { display: flex; justify-content: space-between; margin-top: 15px; font-weight: bold;}
-        input[type="range"] { width: 100%; margin: 10px 0; cursor: pointer; }
+        h2 { margin-top: 0; font-size: 1.1em; border-bottom: 1px solid #444; padding-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;}
+        label { display: flex; justify-content: space-between; margin-top: 10px; font-weight: bold; font-size: 0.95em;}
+        input[type="range"] { width: 100%; margin: 8px 0; cursor: pointer; }
         
+        /* Compact Controls UI */
+        .control-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 5px;
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        .control-grid strong { color: #ff3333; }
+
         .stat-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 12px;
         }
         .stat-box {
             background: #2a2a2a;
-            padding: 10px;
+            padding: 8px;
             border-radius: 6px;
             text-align: center;
+            font-size: 0.9em;
         }
         .stat-box.red { color: #ff5555; }
         .stat-box.blue { color: #55aaff; }
         .stat-box.green { color: #55ffaa; }
-        .stat-value { font-size: 1.5em; font-weight: bold; margin-top: 5px; }
+        .stat-value { font-size: 1.4em; font-weight: bold; margin-top: 3px; }
 
         canvas {
             background-color: #000;
@@ -140,13 +150,16 @@
 </head>
 <body>
 
-    <h1>F1 Aero Simulator: Broadcast Overlay Edition</h1>
-    <div class="instructions">
-        <strong>Controls:</strong> Arrow Keys or WASD (Drive) | Spacebar (DRS)
-    </div>
-    
     <div class="main-container">
         <div class="left-panel">
+            <div class="panel" style="border-left: 4px solid #ff3333;">
+                <h2>Cockpit Controls</h2>
+                <div class="control-grid">
+                    <div><strong>Drive:</strong> Arrow Keys or WASD</div>
+                    <div><strong>DRS Wing:</strong> Spacebar (Hold)</div>
+                </div>
+            </div>
+
             <div class="panel">
                 <h2>Aerodynamic Setup</h2>
                 
@@ -156,7 +169,7 @@
                 <label for="rearWing">Rear Wing Angle: <span id="rearWingVal">20</span>°</label>
                 <input type="range" id="rearWing" min="5" max="35" value="20">
                 
-                <div style="margin-top: 15px; color: #55ffaa; font-weight: bold;">
+                <div style="margin-top: 10px; color: #55ffaa; font-weight: bold; font-size: 0.95em;">
                     DRS Status: <span id="drsStatus" style="color: #ff5555;">CLOSED</span>
                 </div>
             </div>
@@ -189,9 +202,9 @@
 
             <div class="panel">
                 <h2>Session Record</h2>
-                <div style="text-align: center; padding: 10px 0;">
-                    <div style="color: #aaa; font-size: 0.9em; text-transform: uppercase;">All-Time Best Lap</div>
-                    <div id="bestLap" style="font-size: 2.2em; font-family: monospace; font-weight: bold; color: #fff; margin-top: 5px;">--.---</div>
+                <div style="text-align: center; padding: 5px 0;">
+                    <div style="color: #aaa; font-size: 0.85em; text-transform: uppercase;">All-Time Best Lap</div>
+                    <div id="bestLap" style="font-size: 2em; font-family: monospace; font-weight: bold; color: #fff; margin-top: 3px;">--.---</div>
                 </div>
             </div>
         </div>
