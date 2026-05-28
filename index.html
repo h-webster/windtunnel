@@ -137,7 +137,10 @@
         <button id="btn-spa" class="track-btn active" onclick="switchTrack('spa')">Track 3: Belgian Circuit</button>
         
         <div class="controls-hint">
-            Controls: <br><br><strong>ARROW KEYS</strong> or <strong>WASD</strong><br><br>Speed up, brake, and steer!
+            Controls: <br><br>
+            <strong>ARROW KEYS</strong> or <strong>WASD</strong><br><br>
+            <strong>R</strong> to Reset Car<br><br>
+            Speed up, brake, and steer!
         </div>
     </div>
 
@@ -267,9 +270,8 @@
             s2: makeGate(1020, 430, 90)  
         };
 
-        // -> FIXED VISUAL GATES FOR SPA
         const gatesSpa = {
-            finish: makeGate(250, 720, 65), // Moved off the corner down the straightaway
+            finish: makeGate(250, 720, 65),
             s1: makeGate(850, 210, 67),     
             s2: makeGate(1025, 345, -6)     
         };
@@ -301,13 +303,11 @@
             },
             spa: {
                 path: pathSpa,
-                // -> FIXED START POSITION (Placed right behind the new 250 Finish Line)
                 start: { x: 280, y: 706, angle: 2.71 }, 
                 targets: { s1: 7.5, s2: 10.5, s3: 6.5 },
                 pb: { s1: Infinity, s2: Infinity, s3: Infinity, lap: Infinity },
                 checkers: gatesSpa,
                 gates: {
-                    // -> WIDENED YOUR LOGIC BOUNDING BOXES TO GUARANTEE TRIGGERS
                     finish: (x, y, px, py) => px > 250 && x <= 250 && y > 650 && y < 800,
                     s1: (x, y, px, py) => px < 850 && x >= 850 && y > 100 && y < 300,
                     s2: (x, y, px, py) => py < 345 && y >= 345 && x > 900 && x < 1150
@@ -365,10 +365,35 @@
         window.addEventListener('keydown', (e) => {
             if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+            
+            // "R" Key to reset car
+            if (e.code === 'KeyR') {
+                resetCar();
+            }
         });
+
         window.addEventListener('keyup', (e) => {
             if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
         });
+
+        function resetCar() {
+            car.x = currentTrackData.start.x;
+            car.y = currentTrackData.start.y;
+            car.angle = currentTrackData.start.angle;
+            car.speed = 0;
+
+            hasCrossedStartLine = false;
+            currentSector = 1;
+            lapStartTime = 0;
+            
+            sec1Box.className = "dash-panel"; 
+            sec2Box.className = "dash-panel"; 
+            sec3Box.className = "dash-panel";
+            s1Time.innerText = "--.---"; 
+            s2Time.innerText = "--.---"; 
+            s3Time.innerText = "--.---"; 
+            tvLapTime.innerText = "00.000";
+        }
 
         function switchTrack(trackId) {
             document.querySelectorAll('.track-btn').forEach(btn => btn.classList.remove('active'));
@@ -379,17 +404,7 @@
             
             localStorage.setItem('gp_active_track', trackId);
 
-            car.x = currentTrackData.start.x;
-            car.y = currentTrackData.start.y;
-            car.angle = currentTrackData.start.angle;
-            car.speed = 0;
-
-            hasCrossedStartLine = false;
-            currentSector = 1;
-            lapStartTime = 0;
-            
-            sec1Box.className = "dash-panel"; sec2Box.className = "dash-panel"; sec3Box.className = "dash-panel";
-            s1Time.innerText = "--.---"; s2Time.innerText = "--.---"; s3Time.innerText = "--.---"; tvLapTime.innerText = "00.000";
+            resetCar();
 
             s1BestUI.innerText = currentTrackData.pb.s1 === Infinity ? "--.---" : currentTrackData.pb.s1.toFixed(3);
             s2BestUI.innerText = currentTrackData.pb.s2 === Infinity ? "--.---" : currentTrackData.pb.s2.toFixed(3);
