@@ -239,7 +239,7 @@ function drawTrack() {
     ctx.strokeStyle = "#444"; ctx.lineCap = "round"; ctx.lineJoin = "round";
     ctx.lineWidth = trackWidth; ctx.stroke(currentTrackData.path);
     ctx.strokeStyle = "#fff"; ctx.lineWidth = trackWidth - 6; ctx.stroke(currentTrackData.path);
-    ctx.strokeStyle = "#1e3d1e"; ctx.lineWidth = trackWidth - 10; ctx.stroke(currentTrackData.path);
+    ctx.strokeStyle = "#212521"; ctx.lineWidth = trackWidth - 10; ctx.stroke(currentTrackData.path);
 
     ctx.lineWidth = 4; ctx.setLineDash([4, 4]);
     const c = currentTrackData.checkers;
