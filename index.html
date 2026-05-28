@@ -214,7 +214,6 @@
         pathRBR.bezierCurveTo(550, 270, 520, 360, 580, 440); 
         pathRBR.lineTo(650, 545); 
         pathRBR.bezierCurveTo(700, 620, 780, 500, 850, 430); 
-        // Modified T9 and T10: Replacing wide sweepers with sharper, tighter arcs
         pathRBR.lineTo(1380, 430); 
         pathRBR.quadraticCurveTo(1450, 430, 1420, 530); 
         pathRBR.lineTo(1380, 640); 
@@ -224,29 +223,20 @@
 
         // --- 3. Spa Francorchamps Layout (Exaggerated Features) ---
         const pathSpa = new Path2D();
-        // The Launch (Pulled the apex deeper to keep the inside wall sharp)
         pathSpa.moveTo(315, 690);
         pathSpa.lineTo(30, 820);
-        // The Compression
         pathSpa.lineTo(280, 500);
-        // The Eau Rouge S-Curve (Pushed control points wider for a more violent snap)
         pathSpa.bezierCurveTo(120, 450, 480, 460, 425, 390);
-        // The Kemmel Straight
         pathSpa.lineTo(1200, 60);
-        // The Les Combes Loop (Sharpened the right flick, made Bruxelles deeper)
         pathSpa.lineTo(1360, 40); 
         pathSpa.bezierCurveTo(1550, 50, 1680, 180, 1540, 260);
-        // The Pouhon Sweeper (Slightly tightened the double-apex)
         pathSpa.bezierCurveTo(1350, 260, 950, 100, 1020, 270);
         pathSpa.bezierCurveTo(1060, 400, 900, 460, 1040, 480);
-        // The Sector 3 Hook
         pathSpa.lineTo(1370, 600);
         pathSpa.quadraticCurveTo(1480, 700, 1415, 870);
-        // The Blanchimont Blast
         pathSpa.bezierCurveTo(1350, 950, 1150, 750, 1080, 675);
         pathSpa.lineTo(830, 525);
         pathSpa.quadraticCurveTo(600, 400, 395, 660);
-        // The Bus Stop (Exaggerated the zig-zag heavily so it punches through the track width)
         pathSpa.lineTo(380, 610);
         pathSpa.lineTo(310, 640);
         pathSpa.lineTo(315, 690);
@@ -305,8 +295,45 @@
             }
         };
 
-        // --- GLOBAL STATES ---
-        let currentTrackId = 'spa';
+        // --- LOCAL STORAGE FUNCTIONS ---
+        function loadSavedData() {
+            // Load saved personal bests for each track
+            for (const trackId in tracks) {
+                const savedPB = localStorage.getItem(`gp_pb_${trackId}`);
+                if (savedPB) {
+                    try {
+                        const parsed = JSON.parse(savedPB);
+                        tracks[trackId].pb.s1 = parsed.s1 !== undefined ? parsed.s1 : Infinity;
+                        tracks[trackId].pb.s2 = parsed.s2 !== undefined ? parsed.s2 : Infinity;
+                        tracks[trackId].pb.s3 = parsed.s3 !== undefined ? parsed.s3 : Infinity;
+                        tracks[trackId].pb.lap = parsed.lap !== undefined ? parsed.lap : Infinity;
+                    } catch (e) {
+                        console.error("Error parsing saved PB data for track: " + trackId, e);
+                    }
+                }
+            }
+            
+            // Load the last active track ID
+            const savedTrackId = localStorage.getItem('gp_active_track');
+            if (savedTrackId && tracks[savedTrackId]) {
+                currentTrackId = savedTrackId;
+            } else {
+                currentTrackId = 'spa'; // Fallback default
+            }
+        }
+
+        function saveTrackPB(trackId) {
+            const pbData = {
+                s1: tracks[trackId].pb.s1,
+                s2: tracks[trackId].pb.s2,
+                s3: tracks[trackId].pb.s3,
+                lap: tracks[trackId].pb.lap
+            };
+            localStorage.setItem(`gp_pb_${trackId}`, JSON.stringify(pbData));
+        }
+
+        // Initialize state mapping from localStorage before building the runtime environment
+        loadSavedData();
         let currentTrackData = tracks[currentTrackId];
         
         let car = {
@@ -335,6 +362,9 @@
             currentTrackId = trackId;
             currentTrackData = tracks[trackId];
             
+            // Save active track selection
+            localStorage.setItem('gp_active_track', trackId);
+
             car.x = currentTrackData.start.x;
             car.y = currentTrackData.start.y;
             car.angle = currentTrackData.start.angle;
@@ -438,7 +468,11 @@
                     else if (lastS1 < currentTrackData.pb.s1) sec1Box.className = "dash-panel green";
                     else sec1Box.className = "dash-panel yellow";
                     
-                    if (lastS1 < currentTrackData.pb.s1) { currentTrackData.pb.s1 = lastS1; s1BestUI.innerText = lastS1.toFixed(3); }
+                    if (lastS1 < currentTrackData.pb.s1) { 
+                        currentTrackData.pb.s1 = lastS1; 
+                        s1BestUI.innerText = lastS1.toFixed(3); 
+                        saveTrackPB(currentTrackId);
+                    }
                     currentSector = 2; sectorStartTime = Date.now(); sec2Box.className = "dash-panel active";
                 }
             }
@@ -452,7 +486,11 @@
                     else if (lastS2 < currentTrackData.pb.s2) sec2Box.className = "dash-panel green";
                     else sec2Box.className = "dash-panel yellow";
                     
-                    if (lastS2 < currentTrackData.pb.s2) { currentTrackData.pb.s2 = lastS2; s2BestUI.innerText = lastS2.toFixed(3); }
+                    if (lastS2 < currentTrackData.pb.s2) { 
+                        currentTrackData.pb.s2 = lastS2; 
+                        s2BestUI.innerText = lastS2.toFixed(3); 
+                        saveTrackPB(currentTrackId);
+                    }
                     currentSector = 3; sectorStartTime = Date.now(); sec3Box.className = "dash-panel active";
                 }
             }
@@ -471,12 +509,21 @@
                     else if (lastS3 < currentTrackData.pb.s3) sec3Box.className = "dash-panel green";
                     else sec3Box.className = "dash-panel yellow";
                     
-                    if (lastS3 < currentTrackData.pb.s3) { currentTrackData.pb.s3 = lastS3; s3BestUI.innerText = lastS3.toFixed(3); }
+                    if (lastS3 < currentTrackData.pb.s3) { 
+                        currentTrackData.pb.s3 = lastS3; 
+                        s3BestUI.innerText = lastS3.toFixed(3); 
+                    }
 
                     const finalLapTime = lastS1 + lastS2 + lastS3;
                     tvLapTime.innerText = finalLapTime.toFixed(3);
                     
-                    if (finalLapTime < currentTrackData.pb.lap) { currentTrackData.pb.lap = finalLapTime; lapBestUI.innerText = finalLapTime.toFixed(3); }
+                    if (finalLapTime < currentTrackData.pb.lap) { 
+                        currentTrackData.pb.lap = finalLapTime; 
+                        lapBestUI.innerText = finalLapTime.toFixed(3); 
+                    }
+                    
+                    // Save all records updated this lap to localStorage
+                    saveTrackPB(currentTrackId);
                     
                     currentSector = 1; lapStartTime = Date.now(); sectorStartTime = Date.now();
                     setTimeout(() => {
@@ -497,8 +544,8 @@
             requestAnimationFrame(update);
         }
 
-        // Initialize
-        switchTrack('spa');
+        // Initialize mapping using loaded configurations
+        switchTrack(currentTrackId);
         update();
     </script>
 </body>
