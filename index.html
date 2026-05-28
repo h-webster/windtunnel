@@ -201,7 +201,7 @@
         const pathOriginal = new Path2D();
         pathOriginal.moveTo(150, 530); pathOriginal.lineTo(550, 530); pathOriginal.lineTo(600, 530); pathOriginal.lineTo(620, 490); pathOriginal.lineTo(660, 510); pathOriginal.bezierCurveTo(780, 540, 880, 410, 820, 310); pathOriginal.bezierCurveTo(760, 210, 920, 150, 880, 80); pathOriginal.lineTo(180, 80); pathOriginal.arc(180, 110, 30, -Math.PI / 2, Math.PI / 2, true); pathOriginal.lineTo(350, 140); pathOriginal.bezierCurveTo(500, 140, 650, 100, 600, 250); pathOriginal.quadraticCurveTo(580, 320, 480, 320); pathOriginal.lineTo(430, 320); pathOriginal.lineTo(430, 400); pathOriginal.lineTo(300, 400); pathOriginal.lineTo(260, 400); pathOriginal.bezierCurveTo(260, 240, 120, 240, 120, 420); pathOriginal.lineTo(150, 460); pathOriginal.bezierCurveTo(50, 460, 50, 530, 150, 530);
 
-        // --- 2. Red Bull Ring Layout (Sharpened Sector 3) ---
+        // --- 2. Red Bull Ring Layout ---
         const pathRBR = new Path2D();
         pathRBR.moveTo(1050, 730); 
         pathRBR.lineTo(750, 775); 
@@ -221,7 +221,7 @@
         pathRBR.lineTo(1050, 730); 
         pathRBR.closePath();
 
-        // --- 3. Spa Francorchamps Layout (Exaggerated Features) ---
+        // --- 3. Spa Francorchamps Layout ---
         const pathSpa = new Path2D();
         pathSpa.moveTo(315, 690);
         pathSpa.lineTo(30, 820);
@@ -244,17 +244,43 @@
 
 
         // --- TRACK DATABASE ---
+        function makeGate(x, y, angleDeg) {
+            const rad = angleDeg * Math.PI / 180;
+            const halfW = trackWidth / 2;
+            return {
+                x1: x + Math.cos(rad) * halfW,
+                y1: y + Math.sin(rad) * halfW,
+                x2: x - Math.cos(rad) * halfW,
+                y2: y - Math.sin(rad) * halfW
+            };
+        }
+
+        const gatesOriginal = {
+            finish: makeGate(200, 530, 90),
+            s1: makeGate(400, 80, 90),
+            s2: makeGate(280, 400, 90)
+        };
+
+        const gatesRBR = {
+            finish: makeGate(950, 745, 98), 
+            s1: makeGate(515, 137, 85),  
+            s2: makeGate(1020, 430, 90)  
+        };
+
+        // -> FIXED VISUAL GATES FOR SPA
+        const gatesSpa = {
+            finish: makeGate(250, 720, 65), // Moved off the corner down the straightaway
+            s1: makeGate(850, 210, 67),     
+            s2: makeGate(1025, 345, -6)     
+        };
+
         const tracks = {
             original: {
                 path: pathOriginal,
                 start: { x: 180, y: 530, angle: 0 },
                 targets: { s1: 5.2, s2: 6.4, s3: 4.8 },
                 pb: { s1: Infinity, s2: Infinity, s3: Infinity, lap: Infinity },
-                checkers: {
-                    finish: { x1: 200, y1: 490, x2: 200, y2: 570, color: '#fff' },
-                    s1: { x1: 400, y1: 60, x2: 400, y2: 140, color: '#ffff55' },
-                    s2: { x1: 280, y1: 360, x2: 280, y2: 440, color: '#d155ff' }
-                },
+                checkers: gatesOriginal,
                 gates: {
                     finish: (x, y, px, py) => px <= 200 && x > 200 && y > 490 && y < 570,
                     s1: (x, y, px, py) => px >= 400 && x < 400 && y < 140,
@@ -263,41 +289,34 @@
             },
             rbr: {
                 path: pathRBR,
-                start: { x: 900, y: 752, angle: 2.98 }, 
+                start: { x: 990, y: 739, angle: Math.PI + 0.15 }, 
                 targets: { s1: 4.8, s2: 5.5, s3: 4.2 },
                 pb: { s1: Infinity, s2: Infinity, s3: Infinity, lap: Infinity },
-                checkers: {
-                    finish: { x1: 950, y1: 700, x2: 950, y2: 800, color: '#fff' }, 
-                    s1: { x1: 500, y1: 100, x2: 500, y2: 250, color: '#ffff55' },  
-                    s2: { x1: 1000, y1: 380, x2: 1000, y2: 480, color: '#d155ff' }  
-                },
+                checkers: gatesRBR,
                 gates: {
                     finish: (x, y, px, py) => px >= 950 && x < 950 && y > 700 && y < 800, 
-                    s1: (x, y, px, py) => px <= 500 && x > 500 && y > 100 && y < 250,
-                    s2: (x, y, px, py) => px <= 1000 && x > 1000 && y > 380 && y < 480
+                    s1: (x, y, px, py) => px <= 515 && x > 515 && y > 80 && y < 200,
+                    s2: (x, y, px, py) => px <= 1020 && x > 1020 && y > 380 && y < 480
                 }
             },
             spa: {
                 path: pathSpa,
-                start: { x: 330, y: 680, angle: 2.7 }, 
+                // -> FIXED START POSITION (Placed right behind the new 250 Finish Line)
+                start: { x: 280, y: 706, angle: 2.71 }, 
                 targets: { s1: 7.5, s2: 10.5, s3: 6.5 },
                 pb: { s1: Infinity, s2: Infinity, s3: Infinity, lap: Infinity },
-                checkers: {
-                    finish: { x1: 280, y1: 670, x2: 350, y2: 720, color: '#fff' }, 
-                    s1: { x1: 800, y1: 180, x2: 860, y2: 280, color: '#ffff55' },
-                    s2: { x1: 950, y1: 350, x2: 1090, y2: 350, color: '#d155ff' }
-                },
+                checkers: gatesSpa,
                 gates: {
-                    finish: (x, y, px, py) => px > 315 && x <= 315 && y > 670 && y < 720,
-                    s1: (x, y, px, py) => px < 830 && x >= 830 && y > 180 && y < 280,
-                    s2: (x, y, px, py) => py < 350 && y >= 350 && x > 950 && x < 1090
+                    // -> WIDENED YOUR LOGIC BOUNDING BOXES TO GUARANTEE TRIGGERS
+                    finish: (x, y, px, py) => px > 250 && x <= 250 && y > 650 && y < 800,
+                    s1: (x, y, px, py) => px < 850 && x >= 850 && y > 100 && y < 300,
+                    s2: (x, y, px, py) => py < 345 && y >= 345 && x > 900 && x < 1150
                 }
             }
         };
 
         // --- LOCAL STORAGE FUNCTIONS ---
         function loadSavedData() {
-            // Load saved personal bests for each track
             for (const trackId in tracks) {
                 const savedPB = localStorage.getItem(`gp_pb_${trackId}`);
                 if (savedPB) {
@@ -313,12 +332,11 @@
                 }
             }
             
-            // Load the last active track ID
             const savedTrackId = localStorage.getItem('gp_active_track');
             if (savedTrackId && tracks[savedTrackId]) {
                 currentTrackId = savedTrackId;
             } else {
-                currentTrackId = 'spa'; // Fallback default
+                currentTrackId = 'spa'; 
             }
         }
 
@@ -332,7 +350,6 @@
             localStorage.setItem(`gp_pb_${trackId}`, JSON.stringify(pbData));
         }
 
-        // Initialize state mapping from localStorage before building the runtime environment
         loadSavedData();
         let currentTrackData = tracks[currentTrackId];
         
@@ -345,7 +362,6 @@
         let lapStartTime = 0, sectorStartTime = 0, currentSector = 1, hasCrossedStartLine = false;
         let lastS1 = 0, lastS2 = 0, lastS3 = 0;
 
-        // Input Listeners
         window.addEventListener('keydown', (e) => {
             if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
@@ -354,7 +370,6 @@
             if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
         });
 
-        // Track Switcher Function
         function switchTrack(trackId) {
             document.querySelectorAll('.track-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById('btn-' + trackId).classList.add('active');
@@ -362,7 +377,6 @@
             currentTrackId = trackId;
             currentTrackData = tracks[trackId];
             
-            // Save active track selection
             localStorage.setItem('gp_active_track', trackId);
 
             car.x = currentTrackData.start.x;
@@ -383,7 +397,6 @@
             lapBestUI.innerText = currentTrackData.pb.lap === Infinity ? "--.---" : currentTrackData.pb.lap.toFixed(3);
         }
 
-        // Render Functions
         function drawTrack() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -392,16 +405,16 @@
             ctx.strokeStyle = "#fff"; ctx.lineWidth = trackWidth - 6; ctx.stroke(currentTrackData.path);
             ctx.strokeStyle = "#1e3d1e"; ctx.lineWidth = trackWidth - 10; ctx.stroke(currentTrackData.path);
 
-            ctx.lineWidth = 5; ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 4; ctx.setLineDash([4, 4]);
             const c = currentTrackData.checkers;
             
-            ctx.strokeStyle = c.finish.color; ctx.beginPath(); 
+            ctx.strokeStyle = '#ffffff'; ctx.beginPath(); 
             ctx.moveTo(c.finish.x1, c.finish.y1); ctx.lineTo(c.finish.x2, c.finish.y2); ctx.stroke();
 
-            ctx.strokeStyle = c.s1.color; ctx.beginPath(); 
+            ctx.strokeStyle = '#ffff55'; ctx.beginPath(); 
             ctx.moveTo(c.s1.x1, c.s1.y1); ctx.lineTo(c.s1.x2, c.s1.y2); ctx.stroke();
 
-            ctx.strokeStyle = c.s2.color; ctx.beginPath(); 
+            ctx.strokeStyle = '#d155ff'; ctx.beginPath(); 
             ctx.moveTo(c.s2.x1, c.s2.y1); ctx.lineTo(c.s2.x2, c.s2.y2); ctx.stroke();
             
             ctx.setLineDash([]); 
@@ -421,7 +434,6 @@
             ctx.restore(); 
         }
 
-        // Logic Loop
         function update() {
             if (keys.ArrowUp || keys.KeyW) car.speed += car.acceleration;
             else if (keys.ArrowDown || keys.KeyS) car.speed -= car.acceleration * 2.2; 
@@ -522,7 +534,6 @@
                         lapBestUI.innerText = finalLapTime.toFixed(3); 
                     }
                     
-                    // Save all records updated this lap to localStorage
                     saveTrackPB(currentTrackId);
                     
                     currentSector = 1; lapStartTime = Date.now(); sectorStartTime = Date.now();
@@ -544,7 +555,6 @@
             requestAnimationFrame(update);
         }
 
-        // Initialize mapping using loaded configurations
         switchTrack(currentTrackId);
         update();
     </script>
